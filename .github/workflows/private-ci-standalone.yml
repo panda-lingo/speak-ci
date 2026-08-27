@@ -1,0 +1,127 @@
+name: Speak private CI standalone checks
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: Standalone check selected by the private CI dispatcher
+        required: true
+        type: string
+      checkout_repository:
+        description: Source repository to check out
+        required: true
+        type: string
+      checkout_ref:
+        description: Source ref to check out
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  CHECKOUT_REPOSITORY: ${{ inputs.checkout_repository }}
+  CHECKOUT_REF: ${{ inputs.checkout_ref }}
+
+jobs:
+  test-proxy:
+    if: inputs.target == 'test-proxy'
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Run standalone proxy topology smokes at origin root and subpath
+        run: |
+          SPEAK_URL_PREFIX=/ ./scripts/test-standalone-proxy-topology.sh
+          SPEAK_URL_PREFIX=/academy ./scripts/test-standalone-proxy-topology.sh
+
+      - name: Upload standalone proxy postflight evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-observability-proxy-attempt-${{ github.run_attempt }}
+          path: .tmp/e2e/observability/proxy-*
+          if-no-files-found: ignore
+          retention-days: 7
+
+  test-standalone-mm-gateway:
+    if: inputs.target == 'test-standalone-mm-gateway'
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Run standalone mm-gateway smoke
+        run: ./scripts/test-standalone-mm-gateway.sh
+
+      - name: Upload standalone mm-gateway postflight evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-observability-standalone-mm-gateway-attempt-${{ github.run_attempt }}
+          path: .tmp/e2e/observability/standalone-mm-gateway
+          if-no-files-found: ignore
+          retention-days: 7
+
+  test-standalone-operations:
+    if: inputs.target == 'test-standalone-operations'
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Run standalone stateful operations smoke
+        run: ./scripts/test-standalone-operations.sh
+
+      - name: Upload standalone operations postflight evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-observability-standalone-operations-attempt-${{ github.run_attempt }}
+          path: .tmp/e2e/observability/standalone-operations
+          if-no-files-found: ignore
+          retention-days: 7
+
+  test-local-compose-security:
+    if: inputs.target == 'test-local-compose-security'
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Run local Compose network-boundary contract
+        run: ./scripts/test-local-compose-security.sh
+
+      - name: Upload local Compose boundary evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-observability-local-compose-security-attempt-${{ github.run_attempt }}
+          path: .tmp/e2e/observability/local-compose-security
+          if-no-files-found: ignore
+          retention-days: 7

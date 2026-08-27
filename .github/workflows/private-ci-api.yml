@@ -1,0 +1,243 @@
+name: Speak private CI API checks
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: API check selected by the private CI dispatcher
+        required: true
+        type: string
+      checkout_repository:
+        description: Source repository to check out
+        required: true
+        type: string
+      checkout_ref:
+        description: Source ref to check out
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  CHECKOUT_REPOSITORY: ${{ inputs.checkout_repository }}
+  CHECKOUT_REF: ${{ inputs.checkout_ref }}
+
+jobs:
+  test-api:
+    if: inputs.target == 'test-api'
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Validate live AI config helper
+        run: ./scripts/test-live-ai-text-config.sh
+
+      - name: Validate Live Talk config helper
+        run: ./scripts/test-live-talk-config.sh
+
+      - name: Run API tests
+        run: go test ./...
+
+  test-api-ai-text-live:
+    if: inputs.target == 'test-api-ai-text-live'
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run live AI text verification
+        env:
+          IMAGE_TEXT_API_KEY: ${{ secrets.IMAGE_TEXT_API_KEY }}
+          IMAGE_TEXT_BASE_URL: ${{ vars.IMAGE_TEXT_BASE_URL }}
+          IMAGE_TEXT_MODEL: ${{ vars.IMAGE_TEXT_MODEL }}
+          IMAGE_TEXT_API_FORMAT: ${{ vars.IMAGE_TEXT_API_FORMAT }}
+          AI_HTTP_TRACE: "1"
+        run: |
+          set -euo pipefail
+          if [[ -z "${IMAGE_TEXT_API_KEY:-}" || -z "${IMAGE_TEXT_BASE_URL:-}" || -z "${IMAGE_TEXT_MODEL:-}" || -z "${IMAGE_TEXT_API_FORMAT:-}" ]]; then
+            echo "IMAGE_TEXT_* GitHub configuration is incomplete; skipping live AI text verification." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          ./scripts/validate-live-ai-text-config.sh
+
+          {
+            echo "AI_PROVIDER=$IMAGE_TEXT_API_FORMAT"
+            echo "AI_ENDPOINT=$IMAGE_TEXT_BASE_URL"
+            echo "AI_TEXT_MODEL=$IMAGE_TEXT_MODEL"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          ./scripts/run-live-ai-text-tests.sh
+
+  test-api-mm-gateway-e2e:
+    if: inputs.target == 'test-api-mm-gateway-e2e'
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Checkout mm-gateway
+        uses: actions/checkout@v7
+        with:
+          repository: sloth-os/mm-gateway
+          ref: 2b13b67309b51998efdbc2ab00afb1f262491e6b
+          path: .tmp/mm-gateway
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run real image and music through mm-gateway
+        env:
+          IMAGE_API_KEY: ${{ secrets.IMAGE_API_KEY }}
+          IMAGE_BASE_URL: ${{ vars.IMAGE_BASE_URL }}
+          IMAGE_MODEL: ${{ vars.IMAGE_MODEL }}
+          IMAGE_PROVIDER: ${{ vars.IMAGE_PROVIDER }}
+          MUSIC_API_KEY: ${{ secrets.MUSIC_API_KEY }}
+          MUSIC_BASE_URL: ${{ vars.MUSIC_BASE_URL }}
+          MUSIC_MODEL: ${{ vars.MUSIC_MODEL }}
+          MUSIC_PROVIDER: ${{ vars.MUSIC_PROVIDER }}
+        run: |
+          set -euo pipefail
+          for name in IMAGE_API_KEY IMAGE_BASE_URL IMAGE_MODEL IMAGE_PROVIDER MUSIC_API_KEY MUSIC_BASE_URL MUSIC_MODEL MUSIC_PROVIDER; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "IMAGE_* or MUSIC_* GitHub configuration is incomplete; skipping mm-gateway e2e." | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+          done
+
+          {
+            echo "IMAGE_PROVIDER=$IMAGE_PROVIDER"
+            echo "IMAGE_BASE_URL=$IMAGE_BASE_URL"
+            echo "IMAGE_MODEL=$IMAGE_MODEL"
+            echo "MUSIC_PROVIDER=$MUSIC_PROVIDER"
+            echo "MUSIC_BASE_URL=$MUSIC_BASE_URL"
+            echo "MUSIC_MODEL=$MUSIC_MODEL"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          env -u IMAGE_API_KEY -u MUSIC_API_KEY go test -v -tags=integration ./internal/provider/mmgateway -run '^TestMMGatewayIntegration'
+          MM_GATEWAY_SOURCE_DIR="$GITHUB_WORKSPACE/.tmp/mm-gateway" ./scripts/run-mm-gateway-e2e.sh
+
+      - name: Upload mm-gateway postflight evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-observability-mm-gateway-attempt-${{ github.run_attempt }}
+          path: .tmp/e2e/observability/mm-gateway
+          if-no-files-found: ignore
+          retention-days: 7
+
+  test-api-omni-audio-e2e:
+    if: inputs.target == 'test-api-omni-audio-e2e'
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up FFmpeg
+        run: |
+          set -euo pipefail
+          if command -v ffmpeg >/dev/null; then
+            ffmpeg -version
+          else
+            ffmpeg_archive="$RUNNER_TEMP/ffmpeg-N-126207-g21bbd98e7b-linux64-gpl.tar.xz"
+            ffmpeg_root="$RUNNER_TEMP/ffmpeg-static"
+            ffmpeg_url="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-08-18-15-03/ffmpeg-N-126207-g21bbd98e7b-linux64-gpl.tar.xz"
+            ffmpeg_sha256="ae86e7d2924f46a4658c2a83a74096c8bf5dc7e78bd94e869ff35b45ddf762a0"
+
+            timeout 240s curl --fail --location --retry 2 --retry-all-errors --connect-timeout 15 --max-time 75 --output "$ffmpeg_archive" "$ffmpeg_url"
+            printf '%s  %s\n' "$ffmpeg_sha256" "$ffmpeg_archive" | sha256sum --check --status
+            mkdir -p "$ffmpeg_root"
+            tar -xJf "$ffmpeg_archive" -C "$ffmpeg_root"
+            ffmpeg_binary="$(find "$ffmpeg_root" -type f -path '*/bin/ffmpeg' -print -quit)"
+            test -n "$ffmpeg_binary"
+            test -x "$ffmpeg_binary"
+            echo "$(dirname "$ffmpeg_binary")" >> "$GITHUB_PATH"
+            "$ffmpeg_binary" -version
+          fi
+
+      - name: Run live OMNI audio analysis verification
+        env:
+          OMNI_API_KEY: ${{ secrets.OMNI_API_KEY }}
+          OMNI_BASE_URL: ${{ vars.OMNI_BASE_URL }}
+          OMNI_MODEL: ${{ vars.OMNI_MODEL }}
+          OMNI_API_FORMAT: ${{ vars.OMNI_API_FORMAT }}
+        run: |
+          set -euo pipefail
+          for name in OMNI_API_KEY OMNI_BASE_URL OMNI_MODEL OMNI_API_FORMAT; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "OMNI_* GitHub configuration is incomplete; skipping live audio analysis e2e." | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+          done
+
+          {
+            echo "OMNI_API_FORMAT=$OMNI_API_FORMAT"
+            echo "OMNI_MODEL=$OMNI_MODEL"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          command -v ffmpeg >/dev/null
+          configured_status=0
+          ./scripts/run-live-omni-audio-tests.sh || configured_status=$?
+          if [[ "$configured_status" -eq 0 ]]; then
+            exit 0
+          fi
+
+          if [[ "$OMNI_API_FORMAT" == "gemini" ]]; then
+            echo "Configured Gemini-native audio failed; probing native text and generated-audio capability without changing the job result." | tee -a "$GITHUB_STEP_SUMMARY"
+            diagnostic_status=0
+            go test -count=1 -v -tags=integration ./internal/ai -run '^TestOMNIGeminiNativeCapabilityDiagnostic$' || diagnostic_status=$?
+            if [[ "$diagnostic_status" -eq 0 ]]; then
+              echo "Gemini-native capability diagnostic completed; see its metadata-only text/audio result above." | tee -a "$GITHUB_STEP_SUMMARY"
+            else
+              echo "Gemini-native capability diagnostic could not complete; review its metadata-only test output." | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+          exit "$configured_status"

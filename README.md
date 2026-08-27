@@ -4,7 +4,8 @@ This repository runs GitHub Actions for the private `panda-lingo/speak` reposito
 
 ## Workflow
 
-The workflow at `.github/workflows/speak-private-ci.yml` is pinned to this organization mapping:
+The workflow dispatcher at `.github/workflows/speak-private-ci.yml` is pinned to
+this organization mapping:
 
 | Concern | Value |
 | --- | --- |
@@ -14,14 +15,37 @@ The workflow at `.github/workflows/speak-private-ci.yml` is pinned to this organ
 | Published web image | `ghcr.io/panda-lingo/speak:web-*` |
 | Package publish credentials | `GITHUB_TOKEN` from `panda-lingo/speak-ci` with `packages: write` |
 
+The dispatcher preserves the source workflow's individual test-job names. It
+selects a focused reusable workflow through a declarative `target` input, then
+the dispatcher quality gate requires every selected test job to succeed before
+either image build can begin. The reusable workflow layout is:
+
+| Dispatcher job group | Reusable workflow | Coverage |
+| --- | --- | --- |
+| API | `private-ci-api.yml` | Go, live AI text, direct mm-gateway, and OMNI audio checks |
+| Standalone | `private-ci-standalone.yml` | proxy, mm-gateway, recovery, and local Compose-boundary checks |
+| Web browser | `private-ci-web-browser.yml` | unit, mock-site, and runtime-prefix checks |
+| Web live | `private-ci-web-live.yml` | live AI text and Live Talk journeys |
+| Web full-stack | `private-ci-web-e2e.yml` | desktop and Redroid browser checks |
+| Builds | `private-ci-build.yml` | API and web image build/publish jobs |
+
+Each reusable workflow receives the same `panda-lingo/speak` repository and ref
+mapping as explicit inputs. The called jobs set `CHECKOUT_REPOSITORY` and
+`CHECKOUT_REF` from those inputs and retain `SPEAK_REPO_TOKEN`; this makes the
+private-source boundary visible even though the jobs live in focused files.
+
 The workflow contains the copied `panda-lingo/speak` test, build, and publish jobs and asks them to:
 
 - validate its own job timeout and quality-gate contract in a fast
   `test-private-ci-workflow` job
 - check out `panda-lingo/speak` with `SPEAK_REPO_TOKEN`
 - run the test matrix
+- run both the direct provider-backed mm-gateway e2e and the Admin Portal
+  mm-gateway browser scenario when their mirrored settings are configured
 - exercise the source repository's standalone PostgreSQL, VictoriaMetrics, and
   rclone recovery smoke before images can be built or published
+- exercise the local Compose network-boundary contract and upload its
+  non-secret postflight evidence on every result
 - run the source repository's uncached OMNI audio-practice, pinned music-analysis,
   and voice-memo e2e contract when the mirrored `OMNI_*` settings are present
 - run the source repository's real Live Talk browser journey when the mirrored
@@ -61,26 +85,33 @@ The workflow uses a declarative timeout budget for every job:
 | `quality-gate` | 5 | Must remain strictly below 10 minutes |
 
 Every job must declare an integer `timeout-minutes` value from 1 through 9. The
-`quality-gate` must list every `test-*` job in `needs`, including the standalone
-`mm-gateway` deployment smoke and stateful recovery smoke. The contract script at
-`scripts/test-private-ci-workflow.sh` checks these mappings so a newly added job
-cannot silently bypass the timeout policy or required-result gate.
+`quality-gate` must list every dispatcher `test-*` job in `needs`, including the
+direct and standalone `mm-gateway` checks, the stateful recovery smoke, and the
+local Compose-boundary contract. Each selected reusable job must declare the
+same timeout. The contract script at `scripts/test-private-ci-workflow.sh`
+checks the dispatcher-to-reusable mapping, the timeout policy, and the required
+result gate so a newly added job cannot silently bypass coverage.
 
 ## Required Setup
 
 1. In this repository, add an Actions secret named `SPEAK_REPO_TOKEN`.
 2. Use a token that can read the private `panda-lingo/speak` repository.
-3. Mirror `OMNI_API_FORMAT`, `OMNI_BASE_URL`, and `OMNI_MODEL` as repository
+3. Mirror `IMAGE_PROVIDER`, `IMAGE_BASE_URL`, `IMAGE_MODEL`, `MUSIC_PROVIDER`,
+   `MUSIC_BASE_URL`, and `MUSIC_MODEL` as repository variables, and
+   `IMAGE_API_KEY` plus `MUSIC_API_KEY` as repository secrets. The direct
+   mm-gateway e2e is an explicit successful no-op until all eight values are
+   configured.
+4. Mirror `OMNI_API_FORMAT`, `OMNI_BASE_URL`, and `OMNI_MODEL` as repository
    variables and `OMNI_API_KEY` as a repository secret. Repository-level
    values take precedence over inherited organization values and keep all four
    settings bound to the same provider.
-4. Mirror `LIVE_TALK_API_FORMAT`, `LIVE_TALK_BASE_URL`, and `LIVE_TALK_MODEL`
+5. Mirror `LIVE_TALK_API_FORMAT`, `LIVE_TALK_BASE_URL`, and `LIVE_TALK_MODEL`
    as repository variables and `LIVE_TALK_API_KEY` as a repository secret. The
    format must be `gemini` or `openai`, and all four values must describe the
    same realtime provider endpoint. The workflow passes them only to the
    Live Talk job, whose browser setup writes them through `/admin/plans` rather
    than pre-seeding provider settings through an API shortcut.
-5. Keep the workflow job permissions at `packages: write` so the repository `GITHUB_TOKEN` can publish `ghcr.io/panda-lingo/speak`.
+6. Keep the workflow job permissions at `packages: write` so the repository `GITHUB_TOKEN` can publish `ghcr.io/panda-lingo/speak`.
 
 Without `SPEAK_REPO_TOKEN`, the workflow can start in this public repo, but every job that checks out the private source tree will fail.
 If the resolved `OMNI_*` configuration is incomplete, the live OMNI job is an

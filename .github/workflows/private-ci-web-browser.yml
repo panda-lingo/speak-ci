@@ -1,0 +1,196 @@
+name: Speak private CI web browser checks
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: Web browser check selected by the private CI dispatcher
+        required: true
+        type: string
+      checkout_repository:
+        description: Source repository to check out
+        required: true
+        type: string
+      checkout_ref:
+        description: Source ref to check out
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  CHECKOUT_REPOSITORY: ${{ inputs.checkout_repository }}
+  CHECKOUT_REF: ${{ inputs.checkout_ref }}
+
+jobs:
+  test-web:
+    if: inputs.target == 'test-web'
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Run web unit tests
+        run: npm test
+
+  test-web-sites:
+    if: inputs.target == 'test-web-sites'
+    name: test-web-sites (${{ matrix.name }})
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: suite
+            specs: tests/standalone-sites.e2e.spec.ts
+          - name: language
+            specs: tests/dictionary-page.e2e.spec.ts tests/speech-grammar-results.e2e.spec.ts
+          - name: voice-agent
+            specs: tests/voice-agent-page.e2e.spec.ts
+          - name: creative
+            specs: tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts
+          - name: memory
+            specs: tests/memory-workspace.e2e.spec.ts
+          - name: memos
+            specs: tests/memos-page.e2e.spec.ts
+    defaults:
+      run:
+        working-directory: ./web
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Set up Chrome browser
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: stable
+          install-dependencies: false
+
+      - name: Verify Chrome browser
+        run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
+
+      - name: Run mock-site browser shard
+        env:
+          NEXT_PUBLIC_MOCK_API: "true"
+          PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: npx playwright test ${{ matrix.specs }} --workers=1
+
+      - name: Upload mock-site failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-sites-${{ matrix.name }}-attempt-${{ github.run_attempt }}
+          path: web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  test-web-base-path:
+    if: inputs.target == 'test-web-base-path'
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Set up Chrome browser
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: stable
+          install-dependencies: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build production subpath image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./web
+          file: ./web/Dockerfile
+          platforms: linux/amd64
+          load: true
+          tags: speak-web-subpath-e2e:local
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      - name: Verify Chrome browser
+        run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
+
+      - name: Run production subpath image e2e
+        env:
+          PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          WEB_SUBPATH_IMAGE_READY: "true"
+        run: npm run test:e2e:base-path
+
+      - name: Upload subpath failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-base-path-attempt-${{ github.run_attempt }}
+          path: web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload runtime-prefix postflight evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-observability-base-path-attempt-${{ github.run_attempt }}
+          path: .tmp/e2e/observability/runtime-prefix
+          if-no-files-found: ignore
+          retention-days: 7

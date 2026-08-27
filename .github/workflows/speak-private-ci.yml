@@ -25,14 +25,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  REGISTRY: ghcr.io
-  CHECKOUT_REPOSITORY: panda-lingo/speak
-  CHECKOUT_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
-  IMAGE_NAME: panda-lingo/speak
-  WEB_IMAGE_NAME: panda-lingo/speak
-  PUBLISH_IMAGE: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_image || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))) }}
-
 jobs:
   test-private-ci-workflow:
     timeout-minutes: 9
@@ -47,746 +39,125 @@ jobs:
         run: ./scripts/test-private-ci-workflow.sh
 
   test-api:
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Validate live AI config helper
-        run: ./scripts/test-live-ai-text-config.sh
-
-      - name: Validate Live Talk config helper
-        run: ./scripts/test-live-talk-config.sh
-
-      - name: Run API tests
-        run: go test ./...
+    uses: ./.github/workflows/private-ci-api.yml
+    with:
+      target: test-api
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   test-api-ai-text-live:
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
+    uses: ./.github/workflows/private-ci-api.yml
+    with:
+      target: test-api-ai-text-live
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Run live AI text verification
-        env:
-          IMAGE_TEXT_API_KEY: ${{ secrets.IMAGE_TEXT_API_KEY }}
-          IMAGE_TEXT_BASE_URL: ${{ vars.IMAGE_TEXT_BASE_URL }}
-          IMAGE_TEXT_MODEL: ${{ vars.IMAGE_TEXT_MODEL }}
-          IMAGE_TEXT_API_FORMAT: ${{ vars.IMAGE_TEXT_API_FORMAT }}
-          AI_HTTP_TRACE: "1"
-        run: |
-          set -euo pipefail
-          if [[ -z "${IMAGE_TEXT_API_KEY:-}" || -z "${IMAGE_TEXT_BASE_URL:-}" || -z "${IMAGE_TEXT_MODEL:-}" || -z "${IMAGE_TEXT_API_FORMAT:-}" ]]; then
-            echo "IMAGE_TEXT_* GitHub configuration is incomplete; skipping live AI text verification." | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
-          ./scripts/validate-live-ai-text-config.sh
-
-          {
-            echo "AI_PROVIDER=$IMAGE_TEXT_API_FORMAT"
-            echo "AI_ENDPOINT=$IMAGE_TEXT_BASE_URL"
-            echo "AI_TEXT_MODEL=$IMAGE_TEXT_MODEL"
-          } | tee -a "$GITHUB_STEP_SUMMARY"
-
-          ./scripts/run-live-ai-text-tests.sh
+  test-api-mm-gateway-e2e:
+    uses: ./.github/workflows/private-ci-api.yml
+    with:
+      target: test-api-mm-gateway-e2e
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   test-api-omni-audio-e2e:
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Set up FFmpeg
-        run: |
-          set -euo pipefail
-          if command -v ffmpeg >/dev/null; then
-            ffmpeg -version
-          else
-            ffmpeg_archive="$RUNNER_TEMP/ffmpeg-N-126207-g21bbd98e7b-linux64-gpl.tar.xz"
-            ffmpeg_root="$RUNNER_TEMP/ffmpeg-static"
-            ffmpeg_url="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-08-18-15-03/ffmpeg-N-126207-g21bbd98e7b-linux64-gpl.tar.xz"
-            ffmpeg_sha256="ae86e7d2924f46a4658c2a83a74096c8bf5dc7e78bd94e869ff35b45ddf762a0"
-
-            timeout 240s curl --fail --location --retry 2 --retry-all-errors --connect-timeout 15 --max-time 75 --output "$ffmpeg_archive" "$ffmpeg_url"
-            printf '%s  %s\n' "$ffmpeg_sha256" "$ffmpeg_archive" | sha256sum --check --status
-            mkdir -p "$ffmpeg_root"
-            tar -xJf "$ffmpeg_archive" -C "$ffmpeg_root"
-            ffmpeg_binary="$(find "$ffmpeg_root" -type f -path '*/bin/ffmpeg' -print -quit)"
-            test -n "$ffmpeg_binary"
-            test -x "$ffmpeg_binary"
-            echo "$(dirname "$ffmpeg_binary")" >> "$GITHUB_PATH"
-            "$ffmpeg_binary" -version
-          fi
-
-      - name: Run live OMNI audio analysis verification
-        env:
-          OMNI_API_KEY: ${{ secrets.OMNI_API_KEY }}
-          OMNI_BASE_URL: ${{ vars.OMNI_BASE_URL }}
-          OMNI_MODEL: ${{ vars.OMNI_MODEL }}
-          OMNI_API_FORMAT: ${{ vars.OMNI_API_FORMAT }}
-        run: |
-          set -euo pipefail
-          for name in OMNI_API_KEY OMNI_BASE_URL OMNI_MODEL OMNI_API_FORMAT; do
-            if [[ -z "${!name:-}" ]]; then
-              echo "OMNI_* GitHub configuration is incomplete; skipping live audio analysis e2e." | tee -a "$GITHUB_STEP_SUMMARY"
-              exit 0
-            fi
-          done
-
-          {
-            echo "OMNI_API_FORMAT=$OMNI_API_FORMAT"
-            echo "OMNI_MODEL=$OMNI_MODEL"
-          } | tee -a "$GITHUB_STEP_SUMMARY"
-
-          command -v ffmpeg >/dev/null
-          configured_status=0
-          ./scripts/run-live-omni-audio-tests.sh || configured_status=$?
-          if [[ "$configured_status" -eq 0 ]]; then
-            exit 0
-          fi
-
-          if [[ "$OMNI_API_FORMAT" == "gemini" ]]; then
-            echo "Configured Gemini-native audio failed; probing native text and generated-audio capability without changing the job result." | tee -a "$GITHUB_STEP_SUMMARY"
-            diagnostic_status=0
-            go test -count=1 -v -tags=integration ./internal/ai -run '^TestOMNIGeminiNativeCapabilityDiagnostic$' || diagnostic_status=$?
-            if [[ "$diagnostic_status" -eq 0 ]]; then
-              echo "Gemini-native capability diagnostic completed; see its metadata-only text/audio result above." | tee -a "$GITHUB_STEP_SUMMARY"
-            else
-              echo "Gemini-native capability diagnostic could not complete; review its metadata-only test output." | tee -a "$GITHUB_STEP_SUMMARY"
-            fi
-          fi
-          exit "$configured_status"
+    uses: ./.github/workflows/private-ci-api.yml
+    with:
+      target: test-api-omni-audio-e2e
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   test-proxy:
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Run standalone proxy topology smokes at origin root and subpath
-        run: |
-          SPEAK_URL_PREFIX=/ ./scripts/test-standalone-proxy-topology.sh
-          SPEAK_URL_PREFIX=/academy ./scripts/test-standalone-proxy-topology.sh
-
-      - name: Upload standalone proxy postflight evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: e2e-observability-proxy-attempt-${{ github.run_attempt }}
-          path: .tmp/e2e/observability/proxy-*
-          if-no-files-found: ignore
-          retention-days: 7
+    uses: ./.github/workflows/private-ci-standalone.yml
+    with:
+      target: test-proxy
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   test-standalone-mm-gateway:
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Run standalone mm-gateway smoke
-        run: ./scripts/test-standalone-mm-gateway.sh
-
-      - name: Upload standalone mm-gateway postflight evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: e2e-observability-standalone-mm-gateway-attempt-${{ github.run_attempt }}
-          path: .tmp/e2e/observability/standalone-mm-gateway
-          if-no-files-found: ignore
-          retention-days: 7
+    uses: ./.github/workflows/private-ci-standalone.yml
+    with:
+      target: test-standalone-mm-gateway
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   test-standalone-operations:
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
+    uses: ./.github/workflows/private-ci-standalone.yml
+    with:
+      target: test-standalone-operations
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
-      - name: Run standalone stateful operations smoke
-        run: ./scripts/test-standalone-operations.sh
-
-      - name: Upload standalone operations postflight evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: e2e-observability-standalone-operations-attempt-${{ github.run_attempt }}
-          path: .tmp/e2e/observability/standalone-operations
-          if-no-files-found: ignore
-          retention-days: 7
+  test-local-compose-security:
+    uses: ./.github/workflows/private-ci-standalone.yml
+    with:
+      target: test-local-compose-security
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   test-web:
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./web
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install web dependencies
-        run: npm ci
-
-      - name: Run web unit tests
-        run: npm test
+    uses: ./.github/workflows/private-ci-web-browser.yml
+    with:
+      target: test-web
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   test-web-sites:
-    name: test-web-sites (${{ matrix.name }})
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: suite
-            specs: tests/standalone-sites.e2e.spec.ts
-          - name: language
-            specs: tests/dictionary-page.e2e.spec.ts tests/speech-grammar-results.e2e.spec.ts
-          - name: voice-agent
-            specs: tests/voice-agent-page.e2e.spec.ts
-          - name: creative
-            specs: tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts
-          - name: memory
-            specs: tests/memory-workspace.e2e.spec.ts
-          - name: memos
-            specs: tests/memos-page.e2e.spec.ts
-    defaults:
-      run:
-        working-directory: ./web
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install web dependencies
-        run: npm ci
-
-      - name: Set up Chrome browser
-        id: setup-chrome
-        uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: stable
-          install-dependencies: false
-
-      - name: Verify Chrome browser
-        run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
-
-      - name: Run mock-site browser shard
-        env:
-          NEXT_PUBLIC_MOCK_API: "true"
-          PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-        run: npx playwright test ${{ matrix.specs }} --workers=1
-
-      - name: Upload mock-site failure artifacts
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-sites-${{ matrix.name }}-attempt-${{ github.run_attempt }}
-          path: web/test-results
-          if-no-files-found: ignore
-          retention-days: 7
+    uses: ./.github/workflows/private-ci-web-browser.yml
+    with:
+      target: test-web-sites
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   test-web-base-path:
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./web
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install web dependencies
-        run: npm ci
-
-      - name: Set up Chrome browser
-        id: setup-chrome
-        uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: stable
-          install-dependencies: false
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build production subpath image
-        uses: docker/build-push-action@v7
-        with:
-          context: ./web
-          file: ./web/Dockerfile
-          platforms: linux/amd64
-          load: true
-          tags: speak-web-subpath-e2e:local
-          cache-from: type=gha,scope=web
-          cache-to: type=gha,mode=max,scope=web
-
-      - name: Verify Chrome browser
-        run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
-
-      - name: Run production subpath image e2e
-        env:
-          PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-          WEB_SUBPATH_IMAGE_READY: "true"
-        run: npm run test:e2e:base-path
-
-      - name: Upload subpath failure artifacts
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-base-path-attempt-${{ github.run_attempt }}
-          path: web/test-results
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload runtime-prefix postflight evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: e2e-observability-base-path-attempt-${{ github.run_attempt }}
-          path: .tmp/e2e/observability/runtime-prefix
-          if-no-files-found: ignore
-          retention-days: 7
+    uses: ./.github/workflows/private-ci-web-browser.yml
+    with:
+      target: test-web-base-path
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   test-web-ai-text-live:
-    name: test-web-ai-text-live (${{ matrix.scenario }})
     needs: test-api-ai-text-live
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        scenario: [practice, reader-text, reader-image, music, rss, pet]
-    defaults:
-      run:
-        working-directory: ./web
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install web dependencies
-        run: npm ci
-
-      - name: Set up Chrome browser
-        id: setup-chrome
-        uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: stable
-          install-dependencies: false
-
-      - name: Verify Chrome browser
-        run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
-
-      - name: Run live AI text browser e2e
-        env:
-          IMAGE_TEXT_API_KEY: ${{ secrets.IMAGE_TEXT_API_KEY }}
-          IMAGE_TEXT_BASE_URL: ${{ vars.IMAGE_TEXT_BASE_URL }}
-          IMAGE_TEXT_MODEL: ${{ vars.IMAGE_TEXT_MODEL }}
-          IMAGE_TEXT_API_FORMAT: ${{ vars.IMAGE_TEXT_API_FORMAT }}
-          LIVE_AI_SCENARIO: ${{ matrix.scenario }}
-          PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${IMAGE_TEXT_API_KEY:-}" || -z "${IMAGE_TEXT_BASE_URL:-}" || -z "${IMAGE_TEXT_MODEL:-}" || -z "${IMAGE_TEXT_API_FORMAT:-}" ]]; then
-            echo "IMAGE_TEXT_* GitHub configuration is incomplete; skipping live AI text browser e2e." | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          ../scripts/validate-live-ai-text-config.sh
-          echo "Running live AI browser scenario: $LIVE_AI_SCENARIO" | tee -a "$GITHUB_STEP_SUMMARY"
-          npm run test:e2e:ci:ai-text-live
-
-      - name: Upload live AI text browser failure artifacts
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-ai-text-live-${{ matrix.scenario }}-attempt-${{ github.run_attempt }}
-          path: web/test-results
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload live AI text postflight evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: e2e-observability-ai-text-${{ matrix.scenario }}-attempt-${{ github.run_attempt }}
-          path: .tmp/e2e/observability
-          if-no-files-found: ignore
-          retention-days: 7
+    uses: ./.github/workflows/private-ci-web-live.yml
+    with:
+      target: test-web-ai-text-live
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   test-web-live-talk-live:
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./web
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install web dependencies
-        run: npm ci
-
-      - name: Set up Chrome browser
-        id: setup-chrome
-        uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: stable
-          # GitHub-hosted Ubuntu already includes Chrome's shared libraries.
-          # Avoid setup-chrome's unbounded apt-get update before this 9-minute
-          # real-provider journey; the next step proves the binary launches.
-          install-dependencies: false
-
-      - name: Verify Chrome browser
-        run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
-
-      - name: Run real Live Talk browser e2e
-        env:
-          LIVE_TALK_API_KEY: ${{ secrets.LIVE_TALK_API_KEY }}
-          LIVE_TALK_BASE_URL: ${{ vars.LIVE_TALK_BASE_URL }}
-          LIVE_TALK_MODEL: ${{ vars.LIVE_TALK_MODEL }}
-          LIVE_TALK_API_FORMAT: ${{ vars.LIVE_TALK_API_FORMAT }}
-          PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-        run: |
-          set -euo pipefail
-          for name in LIVE_TALK_API_KEY LIVE_TALK_BASE_URL LIVE_TALK_MODEL LIVE_TALK_API_FORMAT; do
-            if [[ -z "${!name:-}" ]]; then
-              echo "LIVE_TALK_* GitHub configuration is incomplete; skipping real Live Talk browser e2e." | tee -a "$GITHUB_STEP_SUMMARY"
-              exit 0
-            fi
-          done
-
-          ../scripts/validate-live-talk-config.sh
-          {
-            echo "LIVE_TALK_API_FORMAT=$LIVE_TALK_API_FORMAT"
-            echo "LIVE_TALK_MODEL=$LIVE_TALK_MODEL"
-          } | tee -a "$GITHUB_STEP_SUMMARY"
-          npm run test:e2e:ci:live-talk-live
-
-      - name: Upload real Live Talk browser failure artifacts
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-live-talk-live-attempt-${{ github.run_attempt }}
-          path: web/test-results
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload real Live Talk postflight evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: e2e-observability-live-talk-attempt-${{ github.run_attempt }}
-          path: .tmp/e2e/observability
-          if-no-files-found: ignore
-          retention-days: 7
+    uses: ./.github/workflows/private-ci-web-live.yml
+    with:
+      target: test-web-live-talk-live
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   test-web-e2e:
-    name: test-web-e2e (${{ matrix.database }})
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        database: [sqlite, postgres]
-    defaults:
-      run:
-        working-directory: ./web
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install web dependencies
-        run: npm ci
-
-      - name: Set up Chrome browser
-        id: setup-chrome
-        uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: stable
-          install-dependencies: false
-
-      - name: Verify Chrome browser
-        run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
-
-      - name: Run full-stack browser e2e
-        env:
-          E2E_DATABASE_DRIVER: ${{ matrix.database }}
-          PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-        run: npm run test:e2e:ci
-
-      - name: Upload full-stack browser failure artifacts
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-desktop-${{ matrix.database }}-attempt-${{ github.run_attempt }}
-          path: web/test-results
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload full-stack postflight evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: e2e-observability-desktop-${{ matrix.database }}-attempt-${{ github.run_attempt }}
-          path: .tmp/e2e/observability
-          if-no-files-found: ignore
-          retention-days: 7
+    uses: ./.github/workflows/private-ci-web-e2e.yml
+    with:
+      target: test-web-e2e
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   test-web-e2e-redroid-mobile:
-    name: test-web-e2e-redroid-mobile (${{ matrix.database }})
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        database: [sqlite, postgres]
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-
-      - name: Start redroid Android
-        run: |
-          set -euo pipefail
-          redroid_log="$RUNNER_TEMP/redroid-start.log"
-          redroid_status="$RUNNER_TEMP/redroid-start.status"
-          rm -f "$redroid_log" "$redroid_status"
-          nohup bash -c '
-            ./scripts/ci-start-redroid.sh >"$1" 2>&1
-            status=$?
-            printf "%s\n" "$status" >"$2"
-          ' _ "$redroid_log" "$redroid_status" >/dev/null 2>&1 &
-          echo "Redroid startup launched asynchronously."
-
-      - name: Install web dependencies
-        working-directory: ./web
-        run: npm ci
-
-      - name: Wait for redroid Android
-        run: |
-          set -euo pipefail
-          redroid_log="$RUNNER_TEMP/redroid-start.log"
-          redroid_status="$RUNNER_TEMP/redroid-start.status"
-          for ((elapsed = 0; elapsed < 480; elapsed += 2)); do
-            if [[ -f "$redroid_status" ]]; then
-              break
-            fi
-            sleep 2
-          done
-          if [[ ! -f "$redroid_status" ]]; then
-            echo "Redroid startup exceeded its bounded wait." >&2
-            sed -n '1,240p' "$redroid_log" >&2 || true
-            exit 1
-          fi
-          sed -n '1,240p' "$redroid_log"
-          redroid_exit_status="$(<"$redroid_status")"
-          if [[ "$redroid_exit_status" != "0" ]]; then
-            echo "Redroid startup failed with status $redroid_exit_status." >&2
-            exit "$redroid_exit_status"
-          fi
-          redroid_browser_package="$(sed -n 's/^Using Android browser package: //p' "$redroid_log" | tail -n 1)"
-          if [[ ! "$redroid_browser_package" =~ ^[A-Za-z0-9._-]+$ ]]; then
-            echo "Redroid startup completed without a valid browser package." >&2
-            exit 1
-          fi
-          redroid_platform_tools_dir="$(sed -n 's/^Using Android Platform-Tools directory: //p' "$redroid_log" | tail -n 1)"
-          if [[ -n "$redroid_platform_tools_dir" ]]; then
-            if [[ "$redroid_platform_tools_dir" != "$RUNNER_TEMP"/speak-platform-tools.*/platform-tools ]] ||
-              [[ ! -x "$redroid_platform_tools_dir/adb" ]]; then
-              echo "Redroid startup completed with an invalid Android Platform-Tools directory." >&2
-              exit 1
-            fi
-            echo "$redroid_platform_tools_dir" >> "$GITHUB_PATH"
-            echo "Redroid Android Platform-Tools exported for later steps: $redroid_platform_tools_dir"
-          elif ! command -v adb >/dev/null 2>&1; then
-            echo "Redroid startup completed without adb available to later steps." >&2
-            exit 1
-          fi
-          echo "REDROID_BROWSER_PACKAGE=$redroid_browser_package" >> "$GITHUB_ENV"
-          echo "Redroid browser package exported for later steps: $redroid_browser_package"
-      - name: Run redroid mobile full-stack e2e
-        working-directory: ./web
-        env:
-          E2E_DATABASE_DRIVER: ${{ matrix.database }}
-        run: npm run test:e2e:ci:redroid
-
-      - name: Upload redroid failure artifacts
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-redroid-${{ matrix.database }}-attempt-${{ github.run_attempt }}
-          path: web/test-results
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload redroid postflight evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: e2e-observability-redroid-${{ matrix.database }}-attempt-${{ github.run_attempt }}
-          path: .tmp/e2e/observability
-          if-no-files-found: ignore
-          retention-days: 7
+    uses: ./.github/workflows/private-ci-web-e2e.yml
+    with:
+      target: test-web-e2e-redroid-mobile
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+    secrets: inherit
 
   quality-gate:
     if: always()
@@ -796,10 +167,12 @@ jobs:
       - test-private-ci-workflow
       - test-api
       - test-api-ai-text-live
+      - test-api-mm-gateway-e2e
       - test-api-omni-audio-e2e
       - test-proxy
       - test-standalone-mm-gateway
       - test-standalone-operations
+      - test-local-compose-security
       - test-web
       - test-web-sites
       - test-web-base-path
@@ -818,182 +191,32 @@ jobs:
 
   build-api:
     needs: quality-gate
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Resolve image tags
-        id: image_tags
-        run: |
-          set -euo pipefail
-
-          ref_input='${{ env.CHECKOUT_REF }}'
-          ref_name="$ref_input"
-          latest=false
-
-          if [[ "$ref_input" == refs/tags/* ]]; then
-            ref_name="${ref_input#refs/tags/}"
-            latest=true
-          elif [[ "$ref_input" == refs/heads/* ]]; then
-            ref_name="${ref_input#refs/heads/}"
-            if [[ "$ref_name" == "main" ]]; then
-              latest=true
-            fi
-          elif [[ "$ref_input" == refs/pull/* ]]; then
-            ref_name="pr-${ref_input#refs/pull/}"
-            ref_name="${ref_name%%/*}"
-          elif [[ "$ref_input" == v* ]]; then
-            ref_name="$ref_input"
-            latest=true
-          elif [[ "$ref_input" == "main" ]]; then
-            ref_name=main
-            latest=true
-          elif [[ -z "$ref_input" ]]; then
-            ref_name=detached
-          fi
-
-          tag_name="$(printf '%s' "$ref_name" | sed 's/[^A-Za-z0-9_.-]/-/g')"
-
-          echo "tag_name=$tag_name" >> "$GITHUB_OUTPUT"
-          echo "latest=$latest" >> "$GITHUB_OUTPUT"
-          echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-
-      - name: Set up QEMU
-        if: env.PUBLISH_IMAGE == 'true'
-        uses: docker/setup-qemu-action@v4
-        with:
-          platforms: arm64
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Log in to registry
-        if: env.PUBLISH_IMAGE == 'true'
-        uses: docker/login-action@v4
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ steps.image_tags.outputs.tag_name }}
-            type=raw,value=sha-${{ steps.image_tags.outputs.short_sha }}
-            type=raw,value=latest,enable=${{ steps.image_tags.outputs.latest == 'true' }}
-
-      - name: Build and push api
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: ${{ env.PUBLISH_IMAGE == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
-          push: ${{ env.PUBLISH_IMAGE == 'true' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,mode=max,scope=api
+    uses: ./.github/workflows/private-ci-build.yml
+    with:
+      target: build-api
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+      registry: ghcr.io
+      image_name: panda-lingo/speak
+      web_image_name: panda-lingo/speak
+      publish_image: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_image || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))) }}
+    secrets: inherit
 
   build-web:
     needs: quality-gate
-    timeout-minutes: 9
-    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    steps:
-      - name: Checkout private source
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.CHECKOUT_REPOSITORY }}
-          ref: ${{ env.CHECKOUT_REF }}
-          token: ${{ secrets.SPEAK_REPO_TOKEN }}
-          persist-credentials: false
-
-      - name: Resolve image tags
-        id: image_tags
-        run: |
-          set -euo pipefail
-
-          ref_input='${{ env.CHECKOUT_REF }}'
-          ref_name="$ref_input"
-          latest=false
-
-          if [[ "$ref_input" == refs/tags/* ]]; then
-            ref_name="${ref_input#refs/tags/}"
-            latest=true
-          elif [[ "$ref_input" == refs/heads/* ]]; then
-            ref_name="${ref_input#refs/heads/}"
-            if [[ "$ref_name" == "main" ]]; then
-              latest=true
-            fi
-          elif [[ "$ref_input" == refs/pull/* ]]; then
-            ref_name="pr-${ref_input#refs/pull/}"
-            ref_name="${ref_name%%/*}"
-          elif [[ "$ref_input" == v* ]]; then
-            ref_name="$ref_input"
-            latest=true
-          elif [[ "$ref_input" == "main" ]]; then
-            ref_name=main
-            latest=true
-          elif [[ -z "$ref_input" ]]; then
-            ref_name=detached
-          fi
-
-          tag_name="$(printf '%s' "$ref_name" | sed 's/[^A-Za-z0-9_.-]/-/g')"
-
-          echo "tag_name=$tag_name" >> "$GITHUB_OUTPUT"
-          echo "latest=$latest" >> "$GITHUB_OUTPUT"
-          echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-
-      - name: Set up QEMU
-        if: env.PUBLISH_IMAGE == 'true'
-        uses: docker/setup-qemu-action@v4
-        with:
-          platforms: arm64
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Log in to registry
-        if: env.PUBLISH_IMAGE == 'true'
-        uses: docker/login-action@v4
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract Docker metadata (web)
-        id: meta_web
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}
-          tags: |
-            type=raw,value=web-${{ steps.image_tags.outputs.tag_name }}
-            type=raw,value=web-sha-${{ steps.image_tags.outputs.short_sha }}
-            type=raw,value=web-latest,enable=${{ steps.image_tags.outputs.latest == 'true' }}
-
-      - name: Build and push web
-        uses: docker/build-push-action@v7
-        with:
-          context: ./web
-          file: ./web/Dockerfile
-          platforms: ${{ env.PUBLISH_IMAGE == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
-          push: ${{ env.PUBLISH_IMAGE == 'true' }}
-          tags: ${{ steps.meta_web.outputs.tags }}
-          labels: ${{ steps.meta_web.outputs.labels }}
-          cache-from: type=gha,scope=web
-          cache-to: type=gha,mode=max,scope=web
+    uses: ./.github/workflows/private-ci-build.yml
+    with:
+      target: build-web
+      checkout_repository: panda-lingo/speak
+      checkout_ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_ref || (github.event_name == 'pull_request' && github.head_ref || github.ref_name) }}
+      registry: ghcr.io
+      image_name: panda-lingo/speak
+      web_image_name: panda-lingo/speak
+      publish_image: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_image || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))) }}
+    secrets: inherit

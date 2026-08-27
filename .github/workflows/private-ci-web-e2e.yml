@@ -1,0 +1,211 @@
+name: Speak private CI full-stack web checks
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: Full-stack web check selected by the private CI dispatcher
+        required: true
+        type: string
+      checkout_repository:
+        description: Source repository to check out
+        required: true
+        type: string
+      checkout_ref:
+        description: Source ref to check out
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  CHECKOUT_REPOSITORY: ${{ inputs.checkout_repository }}
+  CHECKOUT_REF: ${{ inputs.checkout_ref }}
+
+jobs:
+  test-web-e2e:
+    if: inputs.target == 'test-web-e2e'
+    name: test-web-e2e (${{ matrix.database }})
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgres]
+    defaults:
+      run:
+        working-directory: ./web
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Set up Chrome browser
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: stable
+          install-dependencies: false
+
+      - name: Verify Chrome browser
+        run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
+
+      - name: Run full-stack browser e2e
+        env:
+          E2E_DATABASE_DRIVER: ${{ matrix.database }}
+          PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: npm run test:e2e:ci
+
+      - name: Upload full-stack browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-desktop-${{ matrix.database }}-attempt-${{ github.run_attempt }}
+          path: web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload full-stack postflight evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-observability-desktop-${{ matrix.database }}-attempt-${{ github.run_attempt }}
+          path: .tmp/e2e/observability
+          if-no-files-found: ignore
+          retention-days: 7
+
+  test-web-e2e-redroid-mobile:
+    if: inputs.target == 'test-web-e2e-redroid-mobile'
+    name: test-web-e2e-redroid-mobile (${{ matrix.database }})
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgres]
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.CHECKOUT_REPOSITORY }}
+          ref: ${{ env.CHECKOUT_REF }}
+          token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Start redroid Android
+        run: |
+          set -euo pipefail
+          redroid_log="$RUNNER_TEMP/redroid-start.log"
+          redroid_status="$RUNNER_TEMP/redroid-start.status"
+          rm -f "$redroid_log" "$redroid_status"
+          nohup bash -c '
+            ./scripts/ci-start-redroid.sh >"$1" 2>&1
+            status=$?
+            printf "%s\n" "$status" >"$2"
+          ' _ "$redroid_log" "$redroid_status" >/dev/null 2>&1 &
+          echo "Redroid startup launched asynchronously."
+
+      - name: Install web dependencies
+        working-directory: ./web
+        run: npm ci
+
+      - name: Wait for redroid Android
+        run: |
+          set -euo pipefail
+          redroid_log="$RUNNER_TEMP/redroid-start.log"
+          redroid_status="$RUNNER_TEMP/redroid-start.status"
+          for ((elapsed = 0; elapsed < 480; elapsed += 2)); do
+            if [[ -f "$redroid_status" ]]; then
+              break
+            fi
+            sleep 2
+          done
+          if [[ ! -f "$redroid_status" ]]; then
+            echo "Redroid startup exceeded its bounded wait." >&2
+            sed -n '1,240p' "$redroid_log" >&2 || true
+            exit 1
+          fi
+          sed -n '1,240p' "$redroid_log"
+          redroid_exit_status="$(<"$redroid_status")"
+          if [[ "$redroid_exit_status" != "0" ]]; then
+            echo "Redroid startup failed with status $redroid_exit_status." >&2
+            exit "$redroid_exit_status"
+          fi
+          redroid_browser_package="$(sed -n 's/^Using Android browser package: //p' "$redroid_log" | tail -n 1)"
+          if [[ ! "$redroid_browser_package" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Redroid startup completed without a valid browser package." >&2
+            exit 1
+          fi
+          redroid_platform_tools_dir="$(sed -n 's/^Using Android Platform-Tools directory: //p' "$redroid_log" | tail -n 1)"
+          if [[ -n "$redroid_platform_tools_dir" ]]; then
+            if [[ "$redroid_platform_tools_dir" != "$RUNNER_TEMP"/speak-platform-tools.*/platform-tools ]] ||
+              [[ ! -x "$redroid_platform_tools_dir/adb" ]]; then
+              echo "Redroid startup completed with an invalid Android Platform-Tools directory." >&2
+              exit 1
+            fi
+            echo "$redroid_platform_tools_dir" >> "$GITHUB_PATH"
+            echo "Redroid Android Platform-Tools exported for later steps: $redroid_platform_tools_dir"
+          elif ! command -v adb >/dev/null 2>&1; then
+            echo "Redroid startup completed without adb available to later steps." >&2
+            exit 1
+          fi
+          echo "REDROID_BROWSER_PACKAGE=$redroid_browser_package" >> "$GITHUB_ENV"
+          echo "Redroid browser package exported for later steps: $redroid_browser_package"
+
+      - name: Run redroid mobile full-stack e2e
+        working-directory: ./web
+        env:
+          E2E_DATABASE_DRIVER: ${{ matrix.database }}
+        run: npm run test:e2e:ci:redroid
+
+      - name: Upload redroid failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-redroid-${{ matrix.database }}-attempt-${{ github.run_attempt }}
+          path: web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload redroid postflight evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-observability-redroid-${{ matrix.database }}-attempt-${{ github.run_attempt }}
+          path: .tmp/e2e/observability
+          if-no-files-found: ignore
+          retention-days: 7

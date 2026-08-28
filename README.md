@@ -61,7 +61,7 @@ The workflow contains the copied `panda-lingo/speak` test, build, and publish jo
 
 Automatic behavior:
 
-- pushes and pull requests in this repo run tests and image builds against the matching branch name in `panda-lingo/speak`
+- pull requests, pushes to `main`, and tags that start with `v` run tests and image builds against the matching source ref in `panda-lingo/speak`
 - pushes to `main` and tags that start with `v` also publish images
 - manual runs can choose any `source_ref` from `panda-lingo/speak` and can force publishing with the `publish_image` input
 

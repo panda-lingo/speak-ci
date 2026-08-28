@@ -112,7 +112,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: sloth-os/mm-gateway
-          ref: 2b13b67309b51998efdbc2ab00afb1f262491e6b
+          ref: bd0421cb53e5990f5ed030b16d31381c8648ecbb
           path: .tmp/mm-gateway
           persist-credentials: false
 
@@ -132,11 +132,18 @@ jobs:
           MUSIC_BASE_URL: ${{ vars.MUSIC_BASE_URL }}
           MUSIC_MODEL: ${{ vars.MUSIC_MODEL }}
           MUSIC_PROVIDER: ${{ vars.MUSIC_PROVIDER }}
+          VERTEX_CREDENTIALS_JSON: ${{ secrets.VERTEX_CREDENTIALS_JSON }}
         run: |
           set -euo pipefail
-          for name in IMAGE_API_KEY IMAGE_BASE_URL IMAGE_MODEL IMAGE_PROVIDER MUSIC_API_KEY MUSIC_BASE_URL MUSIC_MODEL MUSIC_PROVIDER; do
+          required_names=(IMAGE_API_KEY IMAGE_BASE_URL IMAGE_MODEL IMAGE_PROVIDER MUSIC_MODEL MUSIC_PROVIDER)
+          if [[ "$MUSIC_PROVIDER" == "vertex" ]]; then
+            required_names+=(VERTEX_CREDENTIALS_JSON)
+          else
+            required_names+=(MUSIC_API_KEY MUSIC_BASE_URL)
+          fi
+          for name in "${required_names[@]}"; do
             if [[ -z "${!name:-}" ]]; then
-              echo "IMAGE_* or MUSIC_* GitHub configuration is incomplete; skipping mm-gateway e2e." | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "IMAGE_* or selected music-provider GitHub configuration is incomplete; skipping mm-gateway e2e." | tee -a "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
           done
@@ -146,11 +153,16 @@ jobs:
             echo "IMAGE_BASE_URL=$IMAGE_BASE_URL"
             echo "IMAGE_MODEL=$IMAGE_MODEL"
             echo "MUSIC_PROVIDER=$MUSIC_PROVIDER"
-            echo "MUSIC_BASE_URL=$MUSIC_BASE_URL"
             echo "MUSIC_MODEL=$MUSIC_MODEL"
+            if [[ "$MUSIC_PROVIDER" == "vertex" ]]; then
+              echo "MUSIC_AUTH=vertex_service_account_json"
+              echo "VERTEX_LOCATION=global-default"
+            else
+              echo "MUSIC_BASE_URL=$MUSIC_BASE_URL"
+            fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-          env -u IMAGE_API_KEY -u MUSIC_API_KEY go test -v -tags=integration ./internal/provider/mmgateway -run '^TestMMGatewayIntegration'
+          env -u IMAGE_API_KEY -u MUSIC_API_KEY -u VERTEX_CREDENTIALS_JSON go test -v -tags=integration ./internal/provider/mmgateway -run '^TestMMGatewayIntegration'
           MM_GATEWAY_SOURCE_DIR="$GITHUB_WORKSPACE/.tmp/mm-gateway" ./scripts/run-mm-gateway-e2e.sh
 
       - name: Upload mm-gateway postflight evidence

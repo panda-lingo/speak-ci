@@ -97,10 +97,17 @@ result gate so a newly added job cannot silently bypass coverage.
 1. In this repository, add an Actions secret named `SPEAK_REPO_TOKEN`.
 2. Use a token that can read the private `panda-lingo/speak` repository.
 3. Mirror `IMAGE_PROVIDER`, `IMAGE_BASE_URL`, `IMAGE_MODEL`, `MUSIC_PROVIDER`,
-   `MUSIC_BASE_URL`, and `MUSIC_MODEL` as repository variables, and
-   `IMAGE_API_KEY` plus `MUSIC_API_KEY` as repository secrets. The direct
-   mm-gateway e2e is an explicit successful no-op until all eight values are
-   configured.
+   and `MUSIC_MODEL` as repository variables, plus `IMAGE_API_KEY` as a
+   repository secret. For a non-Vertex music backend, also configure
+   `MUSIC_BASE_URL` and `MUSIC_API_KEY`. For Vertex Lyria, set
+   `MUSIC_PROVIDER=vertex`, an explicit Vertex Lyria `MUSIC_MODEL` pin (for
+   example `lyria-3-pro-preview`), and the raw service-account JSON in
+   `VERTEX_CREDENTIALS_JSON`; `MUSIC_API_KEY` and `MUSIC_BASE_URL` are
+   deliberately not required. The direct e2e derives the project from the
+   service account and defaults Lyria to the global endpoint; deployment-only
+   `VERTEX_PROJECT` and `VERTEX_LOCATION` overrides are not injected into this
+   check. The direct mm-gateway e2e is an explicit successful no-op until its
+   selected provider configuration is complete.
 4. Mirror `OMNI_API_FORMAT`, `OMNI_BASE_URL`, and `OMNI_MODEL` as repository
    variables and `OMNI_API_KEY` as a repository secret. Repository-level
    values take precedence over inherited organization values and keep all four

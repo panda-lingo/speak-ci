@@ -113,9 +113,12 @@ timeouts, topology, and result gate so new work cannot bypass coverage.
    `VERTEX_CREDENTIALS_JSON`; `MUSIC_API_KEY` and `MUSIC_BASE_URL` are
    deliberately not required. To verify the production incident path, set the
    repository overrides `MUSIC_PROVIDER=minimax`,
-   `MUSIC_BASE_URL=https://api.minimax.io`, and `MUSIC_MODEL=music-3.0`; the
-   inherited `MUSIC_API_KEY` must be a MiniMax key. The direct e2e derives the project from the
-   service account and defaults Lyria to the global endpoint; deployment-only
+   `MUSIC_BASE_URL=https://api.minimax.io`, and a model currently accepted by
+   that public endpoint. The September 2026 contract pins
+   `MUSIC_MODEL=music-2.6-free`, which is available to every MiniMax API key;
+   the inherited `MUSIC_API_KEY` must be a MiniMax key. The direct e2e derives
+   the project from the service account and defaults Lyria to the global
+   endpoint; deployment-only
    `VERTEX_PROJECT` and `VERTEX_LOCATION` overrides are not injected into this
    check. The direct mm-gateway e2e is an explicit successful no-op until its
    selected provider configuration is complete.

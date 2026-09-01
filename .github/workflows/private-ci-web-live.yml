@@ -27,7 +27,7 @@ jobs:
   test-web-ai-text-live:
     if: inputs.target == 'test-web-ai-text-live'
     name: test-web-ai-text-live (${{ matrix.scenario }})
-    timeout-minutes: 9
+    timeout-minutes: ${{ matrix.scenario == 'music' && 40 || 9 }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -44,6 +44,15 @@ jobs:
           repository: ${{ env.CHECKOUT_REPOSITORY }}
           ref: ${{ env.CHECKOUT_REF }}
           token: ${{ secrets.SPEAK_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Checkout mm-gateway for real browser music
+        if: matrix.scenario == 'music'
+        uses: actions/checkout@v7
+        with:
+          repository: sloth-os/mm-gateway
+          ref: afd0557a32c96189320bce3a4583a84f1847684d
+          path: .tmp/mm-gateway
           persist-credentials: false
 
       - name: Set up Go
@@ -78,6 +87,12 @@ jobs:
           IMAGE_TEXT_BASE_URL: ${{ vars.IMAGE_TEXT_BASE_URL }}
           IMAGE_TEXT_MODEL: ${{ vars.IMAGE_TEXT_MODEL }}
           IMAGE_TEXT_API_FORMAT: ${{ vars.IMAGE_TEXT_API_FORMAT }}
+          MUSIC_API_KEY: ${{ matrix.scenario == 'music' && secrets.MUSIC_API_KEY || '' }}
+          MUSIC_BASE_URL: ${{ matrix.scenario == 'music' && vars.MUSIC_BASE_URL || '' }}
+          MUSIC_MODEL: ${{ matrix.scenario == 'music' && vars.MUSIC_MODEL || '' }}
+          MUSIC_PROVIDER: ${{ matrix.scenario == 'music' && vars.MUSIC_PROVIDER || '' }}
+          VERTEX_CREDENTIALS_JSON: ${{ matrix.scenario == 'music' && secrets.VERTEX_CREDENTIALS_JSON || '' }}
+          E2E_MM_GATEWAY_SOURCE_DIR: ${{ github.workspace }}/.tmp/mm-gateway
           LIVE_AI_SCENARIO: ${{ matrix.scenario }}
           PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: |
@@ -85,6 +100,24 @@ jobs:
           if [[ -z "${IMAGE_TEXT_API_KEY:-}" || -z "${IMAGE_TEXT_BASE_URL:-}" || -z "${IMAGE_TEXT_MODEL:-}" || -z "${IMAGE_TEXT_API_FORMAT:-}" ]]; then
             echo "IMAGE_TEXT_* GitHub configuration is incomplete; skipping live AI text browser e2e." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
+          fi
+          if [[ "$LIVE_AI_SCENARIO" == "music" ]]; then
+            required_music_names=(MUSIC_MODEL MUSIC_PROVIDER)
+            if [[ "$MUSIC_PROVIDER" == "vertex" ]]; then
+              required_music_names+=(VERTEX_CREDENTIALS_JSON)
+            else
+              required_music_names+=(MUSIC_API_KEY MUSIC_BASE_URL)
+            fi
+            for name in "${required_music_names[@]}"; do
+              if [[ -z "${!name:-}" ]]; then
+                echo "Selected music-provider GitHub configuration is incomplete; skipping real browser music e2e." | tee -a "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+            done
+            {
+              echo "MUSIC_PROVIDER=$MUSIC_PROVIDER"
+              echo "MUSIC_MODEL=$MUSIC_MODEL"
+            } | tee -a "$GITHUB_STEP_SUMMARY"
           fi
           ../scripts/validate-live-ai-text-config.sh
           echo "Running live AI browser scenario: $LIVE_AI_SCENARIO" | tee -a "$GITHUB_STEP_SUMMARY"

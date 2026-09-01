@@ -40,8 +40,13 @@ The workflow contains the copied `panda-lingo/speak` test, build, and publish jo
   `test-private-ci-workflow` job
 - check out `panda-lingo/speak` with `SPEAK_REPO_TOKEN`
 - run the test matrix
-- run both the direct provider-backed mm-gateway e2e and the Admin Portal
-  mm-gateway browser scenario when their mirrored settings are configured
+- run both the direct provider-backed mm-gateway e2e and the complete `/music`
+  browser journey when their mirrored settings are configured; the browser
+  enters style and lyric direction, composes final inputs, starts asynchronous
+  generation, waits for `completed`, and validates recognizable audio bytes
+- pin the supervisor-capable mm-gateway revision whose status reads return
+  cached snapshots; provider logs containing prompts or signed media URLs are
+  excluded from uploaded artifacts
 - exercise the source repository's standalone PostgreSQL, VictoriaMetrics, and
   rclone recovery smoke before images can be built or published
 - exercise the local Compose network-boundary contract and upload its
@@ -81,16 +86,19 @@ The workflow uses a declarative timeout budget for every job:
 
 | Job group | `timeout-minutes` | Constraint |
 | --- | ---: | --- |
-| `test-*` and `build-*` jobs | 9 | Must remain strictly below 10 minutes |
+| ordinary `test-*` and `build-*` jobs | 9 | Must remain strictly below 10 minutes |
+| `test-api-mm-gateway-e2e` | 25 | Covers the source build and full asynchronous provider deadline |
+| `test-web-ai-text-live (music)` | 40 | Covers setup, composition, generation, terminal polling, and audio validation |
 | `quality-gate` | 5 | Must remain strictly below 10 minutes |
 
-Every job must declare an integer `timeout-minutes` value from 1 through 9. The
-`quality-gate` must list every dispatcher `test-*` job in `needs`, including the
-direct and standalone `mm-gateway` checks, the stateful recovery smoke, and the
-local Compose-boundary contract. Each selected reusable job must declare the
-same timeout. The contract script at `scripts/test-private-ci-workflow.sh`
-checks the dispatcher-to-reusable mapping, the timeout policy, and the required
-result gate so a newly added job cannot silently bypass coverage.
+Every ordinary job must declare an integer timeout from 1 through 9; only the
+two data-driven music exceptions above may exceed it. The `quality-gate` must
+list every dispatcher `test-*` job in `needs`, including the direct and
+standalone `mm-gateway` checks, the stateful recovery smoke, and the local
+Compose-boundary contract. The live browser job depends on both the text and
+direct gateway prerequisites, and its matrix remains serial so provider calls
+cannot overlap. The contract script checks the dispatcher-to-reusable mapping,
+timeouts, topology, and result gate so new work cannot bypass coverage.
 
 ## Required Setup
 
@@ -103,7 +111,10 @@ result gate so a newly added job cannot silently bypass coverage.
    `MUSIC_PROVIDER=vertex`, an explicit Vertex Lyria `MUSIC_MODEL` pin (for
    example `lyria-3-pro-preview`), and the raw service-account JSON in
    `VERTEX_CREDENTIALS_JSON`; `MUSIC_API_KEY` and `MUSIC_BASE_URL` are
-   deliberately not required. The direct e2e derives the project from the
+   deliberately not required. To verify the production incident path, set the
+   repository overrides `MUSIC_PROVIDER=minimax`,
+   `MUSIC_BASE_URL=https://api.minimax.io`, and `MUSIC_MODEL=music-3.0`; the
+   inherited `MUSIC_API_KEY` must be a MiniMax key. The direct e2e derives the project from the
    service account and defaults Lyria to the global endpoint; deployment-only
    `VERTEX_PROJECT` and `VERTEX_LOCATION` overrides are not injected into this
    check. The direct mm-gateway e2e is an explicit successful no-op until its

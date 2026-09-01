@@ -97,7 +97,7 @@ jobs:
 
   test-api-mm-gateway-e2e:
     if: inputs.target == 'test-api-mm-gateway-e2e'
-    timeout-minutes: 9
+    timeout-minutes: 25
     runs-on: ubuntu-latest
     steps:
       - name: Checkout private source
@@ -112,7 +112,8 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: sloth-os/mm-gateway
-          ref: bd0421cb53e5990f5ed030b16d31381c8648ecbb
+          # Async music GET must return the supervisor's cached snapshot.
+          ref: afd0557a32c96189320bce3a4583a84f1847684d
           path: .tmp/mm-gateway
           persist-credentials: false
 
@@ -199,16 +200,16 @@ jobs:
           if command -v ffmpeg >/dev/null; then
             ffmpeg -version
           else
-            ffmpeg_archive="$RUNNER_TEMP/ffmpeg-N-126207-g21bbd98e7b-linux64-gpl.tar.xz"
+            ffmpeg_archive="$RUNNER_TEMP/ffmpeg-6.1-linux-64.zip"
             ffmpeg_root="$RUNNER_TEMP/ffmpeg-static"
-            ffmpeg_url="https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-08-18-15-03/ffmpeg-N-126207-g21bbd98e7b-linux64-gpl.tar.xz"
-            ffmpeg_sha256="ae86e7d2924f46a4658c2a83a74096c8bf5dc7e78bd94e869ff35b45ddf762a0"
+            ffmpeg_url="https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-linux-64.zip"
+            ffmpeg_sha256="8bb4a27f5fd02f3dd9a5e75c9eddf6ace1d50a08929ee0d20bbf17eb467fb711"
 
             timeout 240s curl --fail --location --retry 2 --retry-all-errors --connect-timeout 15 --max-time 75 --output "$ffmpeg_archive" "$ffmpeg_url"
             printf '%s  %s\n' "$ffmpeg_sha256" "$ffmpeg_archive" | sha256sum --check --status
             mkdir -p "$ffmpeg_root"
-            tar -xJf "$ffmpeg_archive" -C "$ffmpeg_root"
-            ffmpeg_binary="$(find "$ffmpeg_root" -type f -path '*/bin/ffmpeg' -print -quit)"
+            unzip -q "$ffmpeg_archive" -d "$ffmpeg_root"
+            ffmpeg_binary="$(find "$ffmpeg_root" -type f -name ffmpeg -print -quit)"
             test -n "$ffmpeg_binary"
             test -x "$ffmpeg_binary"
             echo "$(dirname "$ffmpeg_binary")" >> "$GITHUB_PATH"

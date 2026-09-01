@@ -127,7 +127,7 @@ jobs:
     secrets: inherit
 
   test-web-ai-text-live:
-    needs: test-api-ai-text-live
+    needs: [test-api-ai-text-live, test-api-mm-gateway-e2e]
     uses: ./.github/workflows/private-ci-web-live.yml
     with:
       target: test-web-ai-text-live

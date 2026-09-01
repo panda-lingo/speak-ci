@@ -104,12 +104,22 @@ for contract in "${test_job_contracts[@]}"; do
   require "$dispatcher_job" "$checkout_ref_mapping" "$dispatcher_block"
   require "$dispatcher_job" 'secrets: inherit' "$dispatcher_block"
   require "$selected_job" "if: inputs.target == '$selected_job'" "$reusable_block"
-  require_timeout "$selected_job" "$reusable_block"
+  case "$selected_job" in
+    test-api-mm-gateway-e2e)
+      require "$selected_job" 'timeout-minutes: 25' "$reusable_block"
+      ;;
+    test-web-ai-text-live)
+      require "$selected_job" 'timeout-minutes: ${{ matrix.scenario == '\''music'\'' && 40 || 9 }}' "$reusable_block"
+      ;;
+    *)
+      require_timeout "$selected_job" "$reusable_block"
+      ;;
+  esac
   require_private_checkout "$selected_job" "$reusable_block"
   test_jobs+=("$dispatcher_job")
 
   if [[ "$dispatcher_job" == 'test-web-ai-text-live' ]]; then
-    require "$dispatcher_job" 'needs: test-api-ai-text-live' "$dispatcher_block"
+    require "$dispatcher_job" 'needs: [test-api-ai-text-live, test-api-mm-gateway-e2e]' "$dispatcher_block"
   elif grep -Eq '^    needs:' <<< "$dispatcher_block"; then
     echo "Required test dispatcher job $dispatcher_job must start without a needs dependency" >&2
     exit 1
@@ -164,7 +174,7 @@ content_contracts=(
   "$api_workflow|test-api-ai-text-live|./scripts/validate-live-ai-text-config.sh"
   "$api_workflow|test-api-ai-text-live|./scripts/run-live-ai-text-tests.sh"
   "$api_workflow|test-api-mm-gateway-e2e|repository: sloth-os/mm-gateway"
-  "$api_workflow|test-api-mm-gateway-e2e|ref: bd0421cb53e5990f5ed030b16d31381c8648ecbb"
+  "$api_workflow|test-api-mm-gateway-e2e|ref: afd0557a32c96189320bce3a4583a84f1847684d"
   "$api_workflow|test-api-mm-gateway-e2e|IMAGE_API_KEY: \${{ secrets.IMAGE_API_KEY }}"
   "$api_workflow|test-api-mm-gateway-e2e|IMAGE_BASE_URL: \${{ vars.IMAGE_BASE_URL }}"
   "$api_workflow|test-api-mm-gateway-e2e|IMAGE_MODEL: \${{ vars.IMAGE_MODEL }}"
@@ -179,13 +189,22 @@ content_contracts=(
   "$api_workflow|test-api-mm-gateway-e2e|./scripts/run-mm-gateway-e2e.sh"
   "$api_workflow|test-api-omni-audio-e2e|./scripts/run-live-omni-audio-tests.sh"
   "$api_workflow|test-api-omni-audio-e2e|timeout 240s curl --fail --location --retry 2 --retry-all-errors"
+  "$api_workflow|test-api-omni-audio-e2e|ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-linux-64.zip"
+  "$api_workflow|test-api-omni-audio-e2e|8bb4a27f5fd02f3dd9a5e75c9eddf6ace1d50a08929ee0d20bbf17eb467fb711"
   "$api_workflow|test-api-omni-audio-e2e|sha256sum --check --status"
+  "$api_workflow|test-api-omni-audio-e2e|unzip -q"
   "$standalone_workflow|test-standalone-mm-gateway|./scripts/test-standalone-mm-gateway.sh"
   "$standalone_workflow|test-standalone-operations|./scripts/test-standalone-operations.sh"
   "$standalone_workflow|test-local-compose-security|./scripts/test-local-compose-security.sh"
   "$browser_workflow|test-web-sites|tests/admin-plan-mm-gateway.e2e.spec.ts"
   "$browser_workflow|test-web-base-path|npm run test:e2e:base-path"
   "$live_workflow|test-web-ai-text-live|max-parallel: 1"
+  "$live_workflow|test-web-ai-text-live|Checkout mm-gateway for real browser music"
+  "$live_workflow|test-web-ai-text-live|ref: afd0557a32c96189320bce3a4583a84f1847684d"
+  "$live_workflow|test-web-ai-text-live|MUSIC_API_KEY: \${{ matrix.scenario == 'music' && secrets.MUSIC_API_KEY || '' }}"
+  "$live_workflow|test-web-ai-text-live|MUSIC_PROVIDER: \${{ matrix.scenario == 'music' && vars.MUSIC_PROVIDER || '' }}"
+  "$live_workflow|test-web-ai-text-live|E2E_MM_GATEWAY_SOURCE_DIR: \${{ github.workspace }}/.tmp/mm-gateway"
+  "$live_workflow|test-web-ai-text-live|Selected music-provider GitHub configuration is incomplete; skipping real browser music e2e."
   "$live_workflow|test-web-ai-text-live|../scripts/validate-live-ai-text-config.sh"
   "$live_workflow|test-web-live-talk-live|LIVE_TALK_API_KEY: \${{ secrets.LIVE_TALK_API_KEY }}"
   "$live_workflow|test-web-live-talk-live|../scripts/validate-live-talk-config.sh"

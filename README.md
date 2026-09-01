@@ -112,9 +112,10 @@ timeouts, topology, and result gate so new work cannot bypass coverage.
    example `lyria-3-pro-preview`), and the raw service-account JSON in
    `VERTEX_CREDENTIALS_JSON`; `MUSIC_API_KEY` and `MUSIC_BASE_URL` are
    deliberately not required. To verify the production incident path, set the
-   repository overrides `MUSIC_PROVIDER=minimax`,
-   `MUSIC_BASE_URL=https://api.minimax.io`, and a model currently accepted by
-   that public endpoint. The September 2026 contract pins
+   repository overrides `MUSIC_PROVIDER=minimax`, the regional API host that
+   issued the inherited key, and a model currently accepted by that public
+   endpoint. The China-region CI credential uses
+   `MUSIC_BASE_URL=https://api.minimaxi.com`; the September 2026 contract pins
    `MUSIC_MODEL=music-2.6-free`, which is available to every MiniMax API key;
    the inherited `MUSIC_API_KEY` must be a MiniMax key. The direct e2e derives
    the project from the service account and defaults Lyria to the global

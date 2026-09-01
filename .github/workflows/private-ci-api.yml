@@ -99,6 +99,7 @@ jobs:
     if: inputs.target == 'test-api-mm-gateway-e2e'
     timeout-minutes: 25
     runs-on: ubuntu-latest
+    environment: music-e2e
     steps:
       - name: Checkout private source
         uses: actions/checkout@v7
@@ -133,11 +134,15 @@ jobs:
           MUSIC_BASE_URL: ${{ vars.MUSIC_BASE_URL }}
           MUSIC_MODEL: ${{ vars.MUSIC_MODEL }}
           MUSIC_PROVIDER: ${{ vars.MUSIC_PROVIDER }}
+          MINIMAX_TOKEN: ${{ secrets.MINIMAX_TOKEN }}
+          MINIMAX_UUID: ${{ secrets.MINIMAX_UUID }}
           VERTEX_CREDENTIALS_JSON: ${{ secrets.VERTEX_CREDENTIALS_JSON }}
         run: |
           set -euo pipefail
           required_names=(IMAGE_API_KEY IMAGE_BASE_URL IMAGE_MODEL IMAGE_PROVIDER MUSIC_MODEL MUSIC_PROVIDER)
-          if [[ "$MUSIC_PROVIDER" == "vertex" ]]; then
+          if [[ "$MUSIC_PROVIDER" == "minimax" ]]; then
+            required_names+=(MINIMAX_TOKEN MINIMAX_UUID)
+          elif [[ "$MUSIC_PROVIDER" == "vertex" ]]; then
             required_names+=(VERTEX_CREDENTIALS_JSON)
           else
             required_names+=(MUSIC_API_KEY MUSIC_BASE_URL)
@@ -155,7 +160,9 @@ jobs:
             echo "IMAGE_MODEL=$IMAGE_MODEL"
             echo "MUSIC_PROVIDER=$MUSIC_PROVIDER"
             echo "MUSIC_MODEL=$MUSIC_MODEL"
-            if [[ "$MUSIC_PROVIDER" == "vertex" ]]; then
+            if [[ "$MUSIC_PROVIDER" == "minimax" ]]; then
+              echo "MUSIC_AUTH=minimax_production_sidecar"
+            elif [[ "$MUSIC_PROVIDER" == "vertex" ]]; then
               echo "MUSIC_AUTH=vertex_service_account_json"
               echo "VERTEX_LOCATION=global-default"
             else
@@ -163,7 +170,7 @@ jobs:
             fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-          env -u IMAGE_API_KEY -u MUSIC_API_KEY -u VERTEX_CREDENTIALS_JSON go test -v -tags=integration ./internal/provider/mmgateway -run '^TestMMGatewayIntegration'
+          env -u IMAGE_API_KEY -u MUSIC_API_KEY -u MINIMAX_TOKEN -u MINIMAX_UUID -u VERTEX_CREDENTIALS_JSON go test -v -tags=integration ./internal/provider/mmgateway -run '^TestMMGatewayIntegration'
           MM_GATEWAY_SOURCE_DIR="$GITHUB_WORKSPACE/.tmp/mm-gateway" ./scripts/run-mm-gateway-e2e.sh
 
       - name: Upload mm-gateway postflight evidence

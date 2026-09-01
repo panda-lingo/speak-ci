@@ -113,11 +113,17 @@ timeouts, topology, and result gate so new work cannot bypass coverage.
    `VERTEX_CREDENTIALS_JSON`; `MUSIC_API_KEY` and `MUSIC_BASE_URL` are
    deliberately not required. To verify the production incident path, set
    `MUSIC_PROVIDER=minimax` and `MUSIC_MODEL=music-3.0`. Add short-lived
-   `MINIMAX_TOKEN` and `MINIMAX_UUID` secrets to the `music-e2e` environment;
-   both direct and browser jobs start the production adapter from the immutable
-   image digest declared by Speak, expose it only on a disposable private
-   Docker network and runner loopback, and exclude its raw logs. Delete those
-   environment secrets after the trusted run. The matrix maps only the music
+   `MINIMAX_TOKEN`, `MINIMAX_UUID`, and `MINIMAX_EGRESS_SSH_KEY` secrets to the
+   `music-e2e` environment. Add the pinned forwarding host, user, and known-host
+   line as `MINIMAX_EGRESS_SSH_HOST`, `MINIMAX_EGRESS_SSH_USER`, and
+   `MINIMAX_EGRESS_SSH_KNOWN_HOSTS` repository variables. The server-side key
+   must force a bounded sleep command, permit only `www.minimaxi.com:443`, and
+   deny PTY, agent, and X11 access. Both direct and browser jobs start the
+   production adapter from the immutable image digest declared by Speak,
+   expose it only on a disposable private Docker network and runner loopback,
+   and route only its MiniMax traffic through the pinned tunnel. Delete all
+   three environment secrets and remove the server-side key after the trusted
+   run. The matrix maps only the music
    row to `music-e2e`; all other live-browser rows use the secretless
    `ci-unprivileged` environment. The direct e2e derives the
    project from the service account and defaults Lyria to the global endpoint;

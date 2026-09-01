@@ -136,12 +136,16 @@ jobs:
           MUSIC_PROVIDER: ${{ vars.MUSIC_PROVIDER }}
           MINIMAX_TOKEN: ${{ secrets.MINIMAX_TOKEN }}
           MINIMAX_UUID: ${{ secrets.MINIMAX_UUID }}
+          MINIMAX_EGRESS_SSH_KEY: ${{ secrets.MINIMAX_EGRESS_SSH_KEY }}
+          MINIMAX_EGRESS_SSH_HOST: ${{ vars.MINIMAX_EGRESS_SSH_HOST }}
+          MINIMAX_EGRESS_SSH_USER: ${{ vars.MINIMAX_EGRESS_SSH_USER }}
+          MINIMAX_EGRESS_SSH_KNOWN_HOSTS: ${{ vars.MINIMAX_EGRESS_SSH_KNOWN_HOSTS }}
           VERTEX_CREDENTIALS_JSON: ${{ secrets.VERTEX_CREDENTIALS_JSON }}
         run: |
           set -euo pipefail
           required_names=(IMAGE_API_KEY IMAGE_BASE_URL IMAGE_MODEL IMAGE_PROVIDER MUSIC_MODEL MUSIC_PROVIDER)
           if [[ "$MUSIC_PROVIDER" == "minimax" ]]; then
-            required_names+=(MINIMAX_TOKEN MINIMAX_UUID)
+            required_names+=(MINIMAX_TOKEN MINIMAX_UUID MINIMAX_EGRESS_SSH_KEY MINIMAX_EGRESS_SSH_HOST MINIMAX_EGRESS_SSH_USER MINIMAX_EGRESS_SSH_KNOWN_HOSTS)
           elif [[ "$MUSIC_PROVIDER" == "vertex" ]]; then
             required_names+=(VERTEX_CREDENTIALS_JSON)
           else
@@ -170,7 +174,7 @@ jobs:
             fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-          env -u IMAGE_API_KEY -u MUSIC_API_KEY -u MINIMAX_TOKEN -u MINIMAX_UUID -u VERTEX_CREDENTIALS_JSON go test -v -tags=integration ./internal/provider/mmgateway -run '^TestMMGatewayIntegration'
+          env -u IMAGE_API_KEY -u MUSIC_API_KEY -u MINIMAX_TOKEN -u MINIMAX_UUID -u MINIMAX_EGRESS_SSH_KEY -u MINIMAX_EGRESS_SSH_KNOWN_HOSTS -u VERTEX_CREDENTIALS_JSON go test -v -tags=integration ./internal/provider/mmgateway -run '^TestMMGatewayIntegration'
           MM_GATEWAY_SOURCE_DIR="$GITHUB_WORKSPACE/.tmp/mm-gateway" ./scripts/run-mm-gateway-e2e.sh
 
       - name: Upload mm-gateway postflight evidence

@@ -29,11 +29,25 @@ jobs:
     name: test-web-ai-text-live (${{ matrix.scenario }})
     timeout-minutes: ${{ matrix.scenario == 'music' && 40 || 9 }}
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ matrix.environment }}
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
-        scenario: [practice, reader-text, reader-image, music, rss, pet]
+        include:
+          - scenario: practice
+            environment: ci-unprivileged
+          - scenario: reader-text
+            environment: ci-unprivileged
+          - scenario: reader-image
+            environment: ci-unprivileged
+          - scenario: music
+            environment: music-e2e
+          - scenario: rss
+            environment: ci-unprivileged
+          - scenario: pet
+            environment: ci-unprivileged
     defaults:
       run:
         working-directory: ./web
@@ -91,6 +105,8 @@ jobs:
           MUSIC_BASE_URL: ${{ matrix.scenario == 'music' && vars.MUSIC_BASE_URL || '' }}
           MUSIC_MODEL: ${{ matrix.scenario == 'music' && vars.MUSIC_MODEL || '' }}
           MUSIC_PROVIDER: ${{ matrix.scenario == 'music' && vars.MUSIC_PROVIDER || '' }}
+          MINIMAX_TOKEN: ${{ matrix.scenario == 'music' && secrets.MINIMAX_TOKEN || '' }}
+          MINIMAX_UUID: ${{ matrix.scenario == 'music' && secrets.MINIMAX_UUID || '' }}
           VERTEX_CREDENTIALS_JSON: ${{ matrix.scenario == 'music' && secrets.VERTEX_CREDENTIALS_JSON || '' }}
           E2E_MM_GATEWAY_SOURCE_DIR: ${{ github.workspace }}/.tmp/mm-gateway
           LIVE_AI_SCENARIO: ${{ matrix.scenario }}
@@ -103,7 +119,9 @@ jobs:
           fi
           if [[ "$LIVE_AI_SCENARIO" == "music" ]]; then
             required_music_names=(MUSIC_MODEL MUSIC_PROVIDER)
-            if [[ "$MUSIC_PROVIDER" == "vertex" ]]; then
+            if [[ "$MUSIC_PROVIDER" == "minimax" ]]; then
+              required_music_names+=(MINIMAX_TOKEN MINIMAX_UUID)
+            elif [[ "$MUSIC_PROVIDER" == "vertex" ]]; then
               required_music_names+=(VERTEX_CREDENTIALS_JSON)
             else
               required_music_names+=(MUSIC_API_KEY MUSIC_BASE_URL)

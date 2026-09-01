@@ -106,20 +106,22 @@ timeouts, topology, and result gate so new work cannot bypass coverage.
 2. Use a token that can read the private `panda-lingo/speak` repository.
 3. Mirror `IMAGE_PROVIDER`, `IMAGE_BASE_URL`, `IMAGE_MODEL`, `MUSIC_PROVIDER`,
    and `MUSIC_MODEL` as repository variables, plus `IMAGE_API_KEY` as a
-   repository secret. For a non-Vertex music backend, also configure
+   repository secret. For a generic non-Vertex music backend, also configure
    `MUSIC_BASE_URL` and `MUSIC_API_KEY`. For Vertex Lyria, set
    `MUSIC_PROVIDER=vertex`, an explicit Vertex Lyria `MUSIC_MODEL` pin (for
    example `lyria-3-pro-preview`), and the raw service-account JSON in
    `VERTEX_CREDENTIALS_JSON`; `MUSIC_API_KEY` and `MUSIC_BASE_URL` are
-   deliberately not required. To verify the production incident path, set the
-   repository overrides `MUSIC_PROVIDER=minimax`, the regional API host that
-   issued the inherited key, and a model currently accepted by that public
-   endpoint. The China-region CI credential uses
-   `MUSIC_BASE_URL=https://api.minimaxi.com`; the September 2026 contract pins
-   `MUSIC_MODEL=music-2.6-free`, which is available to every MiniMax API key;
-   the inherited `MUSIC_API_KEY` must be a MiniMax key. The direct e2e derives
-   the project from the service account and defaults Lyria to the global
-   endpoint; deployment-only
+   deliberately not required. To verify the production incident path, set
+   `MUSIC_PROVIDER=minimax` and `MUSIC_MODEL=music-3.0`. Add short-lived
+   `MINIMAX_TOKEN` and `MINIMAX_UUID` secrets to the `music-e2e` environment;
+   both direct and browser jobs start the production adapter from the immutable
+   image digest declared by Speak, expose it only on a disposable private
+   Docker network and runner loopback, and exclude its raw logs. Delete those
+   environment secrets after the trusted run. The matrix maps only the music
+   row to `music-e2e`; all other live-browser rows use the secretless
+   `ci-unprivileged` environment. The direct e2e derives the
+   project from the service account and defaults Lyria to the global endpoint;
+   deployment-only
    `VERTEX_PROJECT` and `VERTEX_LOCATION` overrides are not injected into this
    check. The direct mm-gateway e2e is an explicit successful no-op until its
    selected provider configuration is complete.

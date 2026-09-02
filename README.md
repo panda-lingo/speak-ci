@@ -29,6 +29,39 @@ either image build can begin. The reusable workflow layout is:
 | Web full-stack | `private-ci-web-e2e.yml` | desktop and Redroid browser checks |
 | Builds | `private-ci-build.yml` | API and web image build/publish jobs |
 
+The private workflow adapts, rather than blindly copies, the source reusable
+workflows. Its documented private-only overlays are the explicit
+`checkout_repository` / `checkout_ref` / `SPEAK_REPO_TOKEN` boundary,
+input-derived image tags, `music-e2e` environment isolation, the complete
+trusted `MINIMAX_EGRESS_SSH_*` requirement, and dispatcher self-test,
+source-ref, and publication inputs. Test commands, matrix rows, timeout
+exceptions, and artifact contracts otherwise remain synchronized with
+`panda-lingo/speak`.
+
+The dispatcher sparsely checks out the source browser workflow at the exact
+requested Speak ref. `scripts/test-private-ci-workflow.sh` compares that live
+source matrix with the private adapter and also enforces the current nine-row
+ownership map, making source-only additions a failing parity check.
+
+The current mock-site matrix mirrors the source workflow's nine isolated
+lifecycles:
+
+| Matrix row | Source specs |
+| --- | --- |
+| `suite-quota` | `standalone-sites-quota.e2e.spec.ts` |
+| `suite-pet` | `standalone-sites-pet.e2e.spec.ts` |
+| `suite-availability` | `standalone-sites-availability.e2e.spec.ts` |
+| `language` | `dictionary-page.e2e.spec.ts`, `speech-grammar-results.e2e.spec.ts` |
+| `voice-agent` | `voice-agent-page.e2e.spec.ts` |
+| `creative` | `music-page.e2e.spec.ts`, `graphic-book-workspace.e2e.spec.ts`, `admin-plan-mm-gateway.e2e.spec.ts` |
+| `reader-selection` | `reader-selection-visual-explanation.e2e.spec.ts` |
+| `memory` | `memory-workspace.e2e.spec.ts` |
+| `memos` | `memos-page.e2e.spec.ts` |
+
+Each row owns one fresh Next.js process and one Playwright worker. This keeps
+the longest standalone lifecycle out of a shared process while preserving the
+exact source-suite union.
+
 Each reusable workflow receives the same `panda-lingo/speak` repository and ref
 mapping as explicit inputs. The called jobs set `CHECKOUT_REPOSITORY` and
 `CHECKOUT_REF` from those inputs and retain `SPEAK_REPO_TOKEN`; this makes the
@@ -66,9 +99,15 @@ The workflow contains the copied `panda-lingo/speak` test, build, and publish jo
 
 Automatic behavior:
 
-- pull requests, pushes to `main`, and tags that start with `v` run tests and image builds against the matching source ref in `panda-lingo/speak`
+- pushes to `main` and tags that start with `v` run tests and image builds against the matching source ref in `panda-lingo/speak`
 - pushes to `main` and tags that start with `v` also publish images
 - manual runs can choose any `source_ref` from `panda-lingo/speak` and can force publishing with the `publish_image` input
+
+The dispatcher intentionally has no `pull_request` trigger. A branch from a
+`speak-ci` pull request is not a valid source ref in `panda-lingo/speak`, and
+protected live-test environments accept only trusted main-branch execution.
+Workflow changes are verified by their main-branch run and by an exact-ref
+manual dispatch against the intended Speak commit.
 
 ## Runtime-prefix verification contract
 

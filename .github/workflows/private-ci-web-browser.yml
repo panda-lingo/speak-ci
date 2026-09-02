@@ -62,14 +62,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: suite
-            specs: tests/standalone-sites.e2e.spec.ts
+          - name: suite-quota
+            specs: tests/standalone-sites-quota.e2e.spec.ts
+          - name: suite-pet
+            specs: tests/standalone-sites-pet.e2e.spec.ts
+          - name: suite-availability
+            specs: tests/standalone-sites-availability.e2e.spec.ts
           - name: language
             specs: tests/dictionary-page.e2e.spec.ts tests/speech-grammar-results.e2e.spec.ts
           - name: voice-agent
             specs: tests/voice-agent-page.e2e.spec.ts
           - name: creative
             specs: tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts
+          - name: reader-selection
+            specs: tests/reader-selection-visual-explanation.e2e.spec.ts
           - name: memory
             specs: tests/memory-workspace.e2e.spec.ts
           - name: memos

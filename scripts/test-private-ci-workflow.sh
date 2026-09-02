@@ -4,9 +4,14 @@ set -euo pipefail
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 workflow_dir="$root_dir/.github/workflows"
 dispatcher="$workflow_dir/speak-private-ci.yml"
+source_root="${1:-}"
 
 if [[ ! -f "$dispatcher" ]]; then
   echo "Private CI dispatcher not found: $dispatcher" >&2
+  exit 1
+fi
+if grep -Eq '^  pull_request:' "$dispatcher" || grep -Fq 'github.head_ref' "$dispatcher"; then
+  echo "Private CI must not map speak-ci pull-request refs into panda-lingo/speak" >&2
   exit 1
 fi
 
@@ -58,6 +63,16 @@ workflow_job() {
   ' "$workflow"
 }
 
+workflow_step() {
+  local block="$1"
+  local target="$2"
+  awk -v target="$target" '
+    $0 == "      - name: " target { in_step = 1; print; next }
+    in_step && /^      - / { exit }
+    in_step { print }
+  ' <<< "$block"
+}
+
 require() {
   local subject="$1"
   local expected="$2"
@@ -90,9 +105,18 @@ require_private_checkout() {
 
 private_contract_block="$(workflow_job "$dispatcher" test-private-ci-workflow)"
 require_timeout 'test-private-ci-workflow' "$private_contract_block"
-require 'test-private-ci-workflow' './scripts/test-private-ci-workflow.sh' "$private_contract_block"
+source_checkout_block="$(workflow_step "$private_contract_block" 'Checkout source workflow contract')"
+require 'source workflow checkout' 'uses: actions/checkout@v7' "$source_checkout_block"
+require 'source workflow checkout' 'repository: panda-lingo/speak' "$source_checkout_block"
+require 'source workflow checkout' 'ref: ${{ github.event_name == '\''workflow_dispatch'\'' && inputs.source_ref || github.ref_name }}' "$source_checkout_block"
+require 'source workflow checkout' 'token: ${{ secrets.SPEAK_REPO_TOKEN }}' "$source_checkout_block"
+require 'source workflow checkout' 'path: .tmp/speak-source' "$source_checkout_block"
+require 'source workflow checkout' 'sparse-checkout: .github/workflows/docker-ci-web-browser.yml' "$source_checkout_block"
+require 'source workflow checkout' 'sparse-checkout-cone-mode: false' "$source_checkout_block"
+require 'source workflow checkout' 'persist-credentials: false' "$source_checkout_block"
+require 'test-private-ci-workflow' './scripts/test-private-ci-workflow.sh .tmp/speak-source' "$private_contract_block"
 
-checkout_ref_mapping='checkout_ref: ${{ github.event_name == '\''workflow_dispatch'\'' && inputs.source_ref || (github.event_name == '\''pull_request'\'' && github.head_ref || github.ref_name) }}'
+checkout_ref_mapping='checkout_ref: ${{ github.event_name == '\''workflow_dispatch'\'' && inputs.source_ref || github.ref_name }}'
 test_jobs=(test-private-ci-workflow)
 for contract in "${test_job_contracts[@]}"; do
   IFS='|' read -r dispatcher_job reusable_name selected_job <<< "$contract"
@@ -250,6 +274,58 @@ for browser_contract in \
   require "$job" 'install-dependencies: false' "$browser_block"
   require "$job" 'Verify Chrome browser' "$browser_block"
 done
+
+# The private checkout adapter may differ from the source workflow, but its
+# mock-site ownership map must remain an exact copy. Exact comparison catches
+# both missing coverage and accidental duplicate/aggregate execution.
+web_site_matrix() {
+  workflow_job "$1" test-web-sites | awk '
+  /^          - name: / {
+    name = $0
+    sub(/^          - name: /, "", name)
+    next
+  }
+  /^            specs: / && name != "" {
+    specs = $0
+    sub(/^            specs: /, "", specs)
+    print name "|" specs
+    name = ""
+  }
+'
+}
+
+actual_web_site_matrix="$(web_site_matrix "$browser_workflow")"
+expected_web_site_matrix="$(cat <<'EOF'
+suite-quota|tests/standalone-sites-quota.e2e.spec.ts
+suite-pet|tests/standalone-sites-pet.e2e.spec.ts
+suite-availability|tests/standalone-sites-availability.e2e.spec.ts
+language|tests/dictionary-page.e2e.spec.ts tests/speech-grammar-results.e2e.spec.ts
+voice-agent|tests/voice-agent-page.e2e.spec.ts
+creative|tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts
+reader-selection|tests/reader-selection-visual-explanation.e2e.spec.ts
+memory|tests/memory-workspace.e2e.spec.ts
+memos|tests/memos-page.e2e.spec.ts
+EOF
+)"
+if [[ "$actual_web_site_matrix" != "$expected_web_site_matrix" ]]; then
+  echo "test-web-sites matrix must exactly mirror the Speak source workflow" >&2
+  diff -u <(printf '%s\n' "$expected_web_site_matrix") <(printf '%s\n' "$actual_web_site_matrix") >&2 || true
+  exit 1
+fi
+
+if [[ -n "$source_root" ]]; then
+  source_browser_workflow="$source_root/.github/workflows/docker-ci-web-browser.yml"
+  if [[ ! -f "$source_browser_workflow" ]]; then
+    echo "Speak source browser workflow not found: $source_browser_workflow" >&2
+    exit 1
+  fi
+  source_web_site_matrix="$(web_site_matrix "$source_browser_workflow")"
+  if [[ "$actual_web_site_matrix" != "$source_web_site_matrix" ]]; then
+    echo "Private test-web-sites matrix has drifted from the requested Speak source ref" >&2
+    diff -u <(printf '%s\n' "$source_web_site_matrix") <(printf '%s\n' "$actual_web_site_matrix") >&2 || true
+    exit 1
+  fi
+fi
 
 postflight_artifact_contracts=(
   "$standalone_workflow|test-proxy|e2e-observability-proxy-attempt-\${{ github.run_attempt }}|.tmp/e2e/observability/proxy-*"

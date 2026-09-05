@@ -76,6 +76,8 @@ jobs:
             specs: tests/learner-language.e2e.spec.ts
           - name: language-study
             specs: tests/study-language.e2e.spec.ts
+          - name: language-games
+            specs: tests/games-language.e2e.spec.ts
           - name: voice-agent
             specs: tests/voice-agent-page.e2e.spec.ts
           - name: creative
@@ -122,7 +124,7 @@ jobs:
         env:
           NEXT_PUBLIC_MOCK_API: "true"
           PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-        run: npx playwright test ${{ matrix.specs }} --workers=1
+        run: npx playwright test ${{ matrix.specs }} --workers=1 --reporter=line
 
       - name: Upload mock-site failure artifacts
         if: failure()

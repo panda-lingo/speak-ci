@@ -1,5 +1,7 @@
 # speak-ci
 
+Mock-site browser shards emit the Playwright line reporter so responsive case failures and timed-out interactions are visible before the nine-minute job budget expires. Source tests bound action and navigation waits and retain failure traces.
+
 This repository runs GitHub Actions for the private `panda-lingo/speak` repository while keeping the CI repository public.
 
 ## Workflow
@@ -40,10 +42,10 @@ exceptions, and artifact contracts otherwise remain synchronized with
 
 The dispatcher sparsely checks out the source browser workflow at the exact
 requested Speak ref. `scripts/test-private-ci-workflow.sh` compares that live
-source matrix with the private adapter and also enforces the current twelve-row
+source matrix with the private adapter and also enforces the current thirteen-row
 ownership map, making source-only additions a failing parity check.
 
-The current mock-site matrix mirrors the source workflow's twelve isolated
+The current mock-site matrix mirrors the source workflow's thirteen isolated
 lifecycles:
 
 | Matrix row | Source specs |
@@ -55,6 +57,7 @@ lifecycles:
 | `language-switching` | `learning-language.e2e.spec.ts` (Chinese/Japanese selection, enrollment, persistence, guest isolation, responsive UI) |
 | `language-curriculum` | `learner-language.e2e.spec.ts` (native vocabulary, grammar, dictionary, and practice) |
 | `language-study` | `study-language.e2e.spec.ts` (native SRS review and adaptive learning controls) |
+| `language-games` | `games-language.e2e.spec.ts` (six native games, real lifecycle protocol, language rankings, responsive speech controls) |
 | `voice-agent` | `voice-agent-page.e2e.spec.ts` |
 | `creative` | `music-page.e2e.spec.ts`, `graphic-book-workspace.e2e.spec.ts`, `admin-plan-mm-gateway.e2e.spec.ts` |
 | `reader-selection` | `reader-selection-visual-explanation.e2e.spec.ts` |

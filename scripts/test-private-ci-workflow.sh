@@ -304,6 +304,8 @@ language-switching|tests/learning-language.e2e.spec.ts
 language-curriculum|tests/learner-language.e2e.spec.ts
 language-study|tests/study-language.e2e.spec.ts
 language-games|tests/games-language.e2e.spec.ts
+language-practice|tests/practice-language.e2e.spec.ts
+language-pet|tests/pet-language.e2e.spec.ts
 voice-agent|tests/voice-agent-page.e2e.spec.ts
 creative|tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts
 reader-selection|tests/reader-selection-visual-explanation.e2e.spec.ts

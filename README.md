@@ -1,5 +1,11 @@
 # speak-ci
 
+Desktop browser verification retains the source nine-minute job cap. Its
+five-minute Playwright journey deadline and bounded authored-step progress
+reporter leave time for safe postflight evidence; desktop browser traces/results
+upload on failure or cancellation, with existing unique names and seven-day
+retention. No credentials, API bodies, or raw errors enter the progress records.
+
 Mock-site browser shards emit the Playwright line reporter so responsive case failures and timed-out interactions are visible before the nine-minute job budget expires. Source tests bound action and navigation waits and retain failure traces.
 
 This repository runs GitHub Actions for the private `panda-lingo/speak` repository while keeping the CI repository public.

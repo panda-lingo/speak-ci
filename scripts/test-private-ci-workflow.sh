@@ -193,6 +193,11 @@ browser_workflow="$workflow_dir/private-ci-web-browser.yml"
 live_workflow="$workflow_dir/private-ci-web-live.yml"
 e2e_workflow="$workflow_dir/private-ci-web-e2e.yml"
 
+desktop_evidence_job="$(workflow_job "$e2e_workflow" test-web-e2e)"
+desktop_evidence_step="$(workflow_step "$desktop_evidence_job" 'Upload full-stack browser failure artifacts')"
+require 'desktop cancellation evidence' 'if: failure() || cancelled()' "$desktop_evidence_step"
+require 'desktop cancellation evidence' 'path: web/test-results' "$desktop_evidence_step"
+
 content_contracts=(
   "$api_workflow|test-api-ai-text-live|AI_HTTP_TRACE: \"1\""
   "$api_workflow|test-api-ai-text-live|./scripts/validate-live-ai-text-config.sh"

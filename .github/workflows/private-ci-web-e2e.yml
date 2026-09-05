@@ -78,7 +78,7 @@ jobs:
         run: npm run test:e2e:ci
 
       - name: Upload full-stack browser failure artifacts
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-desktop-${{ matrix.database }}-attempt-${{ github.run_attempt }}

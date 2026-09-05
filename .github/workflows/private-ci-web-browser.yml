@@ -88,6 +88,14 @@ jobs:
             specs: tests/music-language.e2e.spec.ts
           - name: language-community
             specs: tests/community-language.e2e.spec.ts
+          - name: language-memory
+            specs: tests/memory-language.e2e.spec.ts tests/memos-language.e2e.spec.ts
+          - name: language-feeds
+            specs: tests/feeds-language.e2e.spec.ts
+          - name: language-agent
+            specs: tests/agent-language.e2e.spec.ts
+          - name: language-setup
+            specs: tests/setup-language.e2e.spec.ts
           - name: voice-agent
             specs: tests/voice-agent-page.e2e.spec.ts
           - name: creative

@@ -42,10 +42,16 @@ exceptions, and artifact contracts otherwise remain synchronized with
 
 The dispatcher sparsely checks out the source browser workflow at the exact
 requested Speak ref. `scripts/test-private-ci-workflow.sh` compares that live
-source matrix with the private adapter and also enforces the current eighteen-row
+source matrix with the private adapter and also enforces the current twenty-two-row
 ownership map, making source-only additions a failing parity check.
 
-The current mock-site matrix mirrors the source workflow's eighteen isolated
+An adapter push-triggered run follows the matching branch name in Speak (for
+example, `main`), not a feature branch's latest checkpoint. While a feature
+branch changes the matrix, that automatic run can correctly reject the older
+source branch. Verification for that checkpoint is the manual dispatch with
+`source_ref` set to its exact pushed Speak SHA; retain the strict parity check.
+
+The current mock-site matrix mirrors the source workflow's twenty-two isolated
 lifecycles:
 
 | Matrix row | Source specs |
@@ -63,6 +69,10 @@ lifecycles:
 | `language-exam` | `exam-language.e2e.spec.ts` (native authored practice preview, responses, submission, progress and retry controls) |
 | `language-music` | `music-language.e2e.spec.ts` (native music-learning controls and responsive learning feedback) |
 | `language-community` | `community-language.e2e.spec.ts` (native shared-content/feedback workflows and deferred-search isolation) |
+| `language-memory` | `memory-language.e2e.spec.ts`, `memos-language.e2e.spec.ts` (native private memory and authored memo workflows) |
+| `language-feeds` | `feeds-language.e2e.spec.ts` (native feed inbox, article, speech, and configuration) |
+| `language-agent` | `agent-language.e2e.spec.ts` (native learner/admin connectors, tasks, schedules, and stale-response guards) |
+| `language-setup` | `setup-language.e2e.spec.ts` (native initial administrator and TOTP recovery) |
 | `voice-agent` | `voice-agent-page.e2e.spec.ts` |
 | `creative` | `music-page.e2e.spec.ts`, `graphic-book-workspace.e2e.spec.ts`, `admin-plan-mm-gateway.e2e.spec.ts` |
 | `reader-selection` | `reader-selection-visual-explanation.e2e.spec.ts` |

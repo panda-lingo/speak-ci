@@ -190,7 +190,9 @@ timeouts, topology, and result gate so new work cannot bypass coverage.
    Workflow contracts positively require Vertex credential/model mapping and
    the generic API-key branch, reject retired sidecar/session wiring, and retain
    all six live browser scenarios, provider validation, bounded timeouts and
-   strict security/postflight gates. A green configuration skip is not provider
+   strict security/postflight gates. Literal contract patterns, including the
+   leading hyphen in each `- scenario:` matrix row, are data rather than search
+   options. A green configuration skip is not provider
    coverage; inspect actual real image/music execution before declaring success.
 
    The matrix maps only the music

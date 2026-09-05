@@ -77,7 +77,7 @@ require() {
   local subject="$1"
   local expected="$2"
   local block="$3"
-  if ! grep -Fq "$expected" <<< "$block"; then
+  if ! grep -Fq -- "$expected" <<< "$block"; then
     echo "$subject is missing required workflow content: $expected" >&2
     exit 1
   fi

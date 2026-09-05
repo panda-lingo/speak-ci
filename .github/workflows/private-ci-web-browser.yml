@@ -70,6 +70,12 @@ jobs:
             specs: tests/standalone-sites-availability.e2e.spec.ts
           - name: language
             specs: tests/dictionary-page.e2e.spec.ts tests/speech-grammar-results.e2e.spec.ts
+          - name: language-switching
+            specs: tests/learning-language.e2e.spec.ts
+          - name: language-curriculum
+            specs: tests/learner-language.e2e.spec.ts
+          - name: language-study
+            specs: tests/study-language.e2e.spec.ts
           - name: voice-agent
             specs: tests/voice-agent-page.e2e.spec.ts
           - name: creative

@@ -40,10 +40,10 @@ exceptions, and artifact contracts otherwise remain synchronized with
 
 The dispatcher sparsely checks out the source browser workflow at the exact
 requested Speak ref. `scripts/test-private-ci-workflow.sh` compares that live
-source matrix with the private adapter and also enforces the current nine-row
+source matrix with the private adapter and also enforces the current twelve-row
 ownership map, making source-only additions a failing parity check.
 
-The current mock-site matrix mirrors the source workflow's nine isolated
+The current mock-site matrix mirrors the source workflow's twelve isolated
 lifecycles:
 
 | Matrix row | Source specs |
@@ -52,6 +52,9 @@ lifecycles:
 | `suite-pet` | `standalone-sites-pet.e2e.spec.ts` |
 | `suite-availability` | `standalone-sites-availability.e2e.spec.ts` |
 | `language` | `dictionary-page.e2e.spec.ts`, `speech-grammar-results.e2e.spec.ts` |
+| `language-switching` | `learning-language.e2e.spec.ts` (Chinese/Japanese selection, enrollment, persistence, guest isolation, responsive UI) |
+| `language-curriculum` | `learner-language.e2e.spec.ts` (native vocabulary, grammar, dictionary, and practice) |
+| `language-study` | `study-language.e2e.spec.ts` (native SRS review and adaptive learning controls) |
 | `voice-agent` | `voice-agent-page.e2e.spec.ts` |
 | `creative` | `music-page.e2e.spec.ts`, `graphic-book-workspace.e2e.spec.ts`, `admin-plan-mm-gateway.e2e.spec.ts` |
 | `reader-selection` | `reader-selection-visual-explanation.e2e.spec.ts` |

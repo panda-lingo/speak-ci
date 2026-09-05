@@ -300,6 +300,9 @@ suite-quota|tests/standalone-sites-quota.e2e.spec.ts
 suite-pet|tests/standalone-sites-pet.e2e.spec.ts
 suite-availability|tests/standalone-sites-availability.e2e.spec.ts
 language|tests/dictionary-page.e2e.spec.ts tests/speech-grammar-results.e2e.spec.ts
+language-switching|tests/learning-language.e2e.spec.ts
+language-curriculum|tests/learner-language.e2e.spec.ts
+language-study|tests/study-language.e2e.spec.ts
 voice-agent|tests/voice-agent-page.e2e.spec.ts
 creative|tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts
 reader-selection|tests/reader-selection-visual-explanation.e2e.spec.ts

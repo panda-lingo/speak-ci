@@ -96,6 +96,12 @@ jobs:
             specs: tests/agent-language.e2e.spec.ts
           - name: language-setup
             specs: tests/setup-language.e2e.spec.ts
+          - name: language-admin-overview
+            specs: tests/admin-overview-language.e2e.spec.ts
+          - name: language-admin-settings
+            specs: tests/admin-settings-language.e2e.spec.ts
+          - name: language-graphics
+            specs: tests/graphic-books-language.e2e.spec.ts
           - name: voice-agent
             specs: tests/voice-agent-page.e2e.spec.ts
           - name: creative

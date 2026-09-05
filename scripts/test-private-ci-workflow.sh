@@ -313,6 +313,9 @@ language-memory|tests/memory-language.e2e.spec.ts tests/memos-language.e2e.spec.
 language-feeds|tests/feeds-language.e2e.spec.ts
 language-agent|tests/agent-language.e2e.spec.ts
 language-setup|tests/setup-language.e2e.spec.ts
+language-admin-overview|tests/admin-overview-language.e2e.spec.ts
+language-admin-settings|tests/admin-settings-language.e2e.spec.ts
+language-graphics|tests/graphic-books-language.e2e.spec.ts
 voice-agent|tests/voice-agent-page.e2e.spec.ts
 creative|tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts
 reader-selection|tests/reader-selection-visual-explanation.e2e.spec.ts

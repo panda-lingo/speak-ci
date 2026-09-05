@@ -42,7 +42,7 @@ exceptions, and artifact contracts otherwise remain synchronized with
 
 The dispatcher sparsely checks out the source browser workflow at the exact
 requested Speak ref. `scripts/test-private-ci-workflow.sh` compares that live
-source matrix with the private adapter and also enforces the current twenty-two-row
+source matrix with the private adapter and also enforces the current twenty-five-row
 ownership map, making source-only additions a failing parity check.
 
 An adapter push-triggered run follows the matching branch name in Speak (for
@@ -51,7 +51,7 @@ branch changes the matrix, that automatic run can correctly reject the older
 source branch. Verification for that checkpoint is the manual dispatch with
 `source_ref` set to its exact pushed Speak SHA; retain the strict parity check.
 
-The current mock-site matrix mirrors the source workflow's twenty-two isolated
+The current mock-site matrix mirrors the source workflow's twenty-five isolated
 lifecycles:
 
 | Matrix row | Source specs |
@@ -73,6 +73,9 @@ lifecycles:
 | `language-feeds` | `feeds-language.e2e.spec.ts` (native feed inbox, article, speech, and configuration) |
 | `language-agent` | `agent-language.e2e.spec.ts` (native learner/admin connectors, tasks, schedules, and stale-response guards) |
 | `language-setup` | `setup-language.e2e.spec.ts` (native initial administrator and TOTP recovery) |
+| `language-admin-overview` | `admin-overview-language.e2e.spec.ts` (native system health, audit and user management) |
+| `language-admin-settings` | `admin-settings-language.e2e.spec.ts` (native config, plan fields, billing and promo recovery) |
+| `language-graphics` | `graphic-books-language.e2e.spec.ts` (native illustrated-book creation and narration lifecycle) |
 | `voice-agent` | `voice-agent-page.e2e.spec.ts` |
 | `creative` | `music-page.e2e.spec.ts`, `graphic-book-workspace.e2e.spec.ts`, `admin-plan-mm-gateway.e2e.spec.ts` |
 | `reader-selection` | `reader-selection-visual-explanation.e2e.spec.ts` |

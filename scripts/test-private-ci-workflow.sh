@@ -213,18 +213,12 @@ content_contracts=(
   "$api_workflow|test-api-mm-gateway-e2e|MUSIC_BASE_URL: \${{ vars.MUSIC_BASE_URL }}"
   "$api_workflow|test-api-mm-gateway-e2e|MUSIC_MODEL: \${{ vars.MUSIC_MODEL }}"
   "$api_workflow|test-api-mm-gateway-e2e|MUSIC_PROVIDER: \${{ vars.MUSIC_PROVIDER }}"
-  "$api_workflow|test-api-mm-gateway-e2e|MINIMAX_TOKEN: \${{ secrets.MINIMAX_TOKEN }}"
-  "$api_workflow|test-api-mm-gateway-e2e|MINIMAX_UUID: \${{ secrets.MINIMAX_UUID }}"
-  "$api_workflow|test-api-mm-gateway-e2e|MINIMAX_EGRESS_SSH_KEY: \${{ secrets.MINIMAX_EGRESS_SSH_KEY }}"
-  "$api_workflow|test-api-mm-gateway-e2e|MINIMAX_EGRESS_SSH_HOST: \${{ vars.MINIMAX_EGRESS_SSH_HOST }}"
-  "$api_workflow|test-api-mm-gateway-e2e|MINIMAX_EGRESS_SSH_USER: \${{ vars.MINIMAX_EGRESS_SSH_USER }}"
-  "$api_workflow|test-api-mm-gateway-e2e|MINIMAX_EGRESS_SSH_KNOWN_HOSTS: \${{ vars.MINIMAX_EGRESS_SSH_KNOWN_HOSTS }}"
   "$api_workflow|test-api-mm-gateway-e2e|VERTEX_CREDENTIALS_JSON: \${{ secrets.VERTEX_CREDENTIALS_JSON }}"
-  "$api_workflow|test-api-mm-gateway-e2e|if [[ \"\$MUSIC_PROVIDER\" == \"minimax\" ]]; then"
-  "$api_workflow|test-api-mm-gateway-e2e|MUSIC_AUTH=minimax_production_sidecar"
-  "$api_workflow|test-api-mm-gateway-e2e|required_names+=(MINIMAX_TOKEN MINIMAX_UUID MINIMAX_EGRESS_SSH_KEY MINIMAX_EGRESS_SSH_HOST MINIMAX_EGRESS_SSH_USER MINIMAX_EGRESS_SSH_KNOWN_HOSTS)"
   "$api_workflow|test-api-mm-gateway-e2e|if [[ \"\$MUSIC_PROVIDER\" == \"vertex\" ]]; then"
+  "$api_workflow|test-api-mm-gateway-e2e|required_names+=(VERTEX_CREDENTIALS_JSON)"
+  "$api_workflow|test-api-mm-gateway-e2e|required_names+=(MUSIC_API_KEY MUSIC_BASE_URL)"
   "$api_workflow|test-api-mm-gateway-e2e|MUSIC_AUTH=vertex_service_account_json"
+  "$api_workflow|test-api-mm-gateway-e2e|env -u IMAGE_API_KEY -u MUSIC_API_KEY -u VERTEX_CREDENTIALS_JSON go test"
   "$api_workflow|test-api-mm-gateway-e2e|./scripts/run-mm-gateway-e2e.sh"
   "$api_workflow|test-api-omni-audio-e2e|./scripts/run-live-omni-audio-tests.sh"
   "$api_workflow|test-api-omni-audio-e2e|timeout 240s curl --fail --location --retry 2 --retry-all-errors"
@@ -245,15 +239,13 @@ content_contracts=(
   "$live_workflow|test-web-ai-text-live|ref: afd0557a32c96189320bce3a4583a84f1847684d"
   "$live_workflow|test-web-ai-text-live|MUSIC_API_KEY: \${{ matrix.scenario == 'music' && secrets.MUSIC_API_KEY || '' }}"
   "$live_workflow|test-web-ai-text-live|MUSIC_PROVIDER: \${{ matrix.scenario == 'music' && vars.MUSIC_PROVIDER || '' }}"
-  "$live_workflow|test-web-ai-text-live|MINIMAX_TOKEN: \${{ matrix.scenario == 'music' && secrets.MINIMAX_TOKEN || '' }}"
-  "$live_workflow|test-web-ai-text-live|MINIMAX_UUID: \${{ matrix.scenario == 'music' && secrets.MINIMAX_UUID || '' }}"
-  "$live_workflow|test-web-ai-text-live|MINIMAX_EGRESS_SSH_KEY: \${{ matrix.scenario == 'music' && secrets.MINIMAX_EGRESS_SSH_KEY || '' }}"
-  "$live_workflow|test-web-ai-text-live|MINIMAX_EGRESS_SSH_HOST: \${{ matrix.scenario == 'music' && vars.MINIMAX_EGRESS_SSH_HOST || '' }}"
-  "$live_workflow|test-web-ai-text-live|MINIMAX_EGRESS_SSH_USER: \${{ matrix.scenario == 'music' && vars.MINIMAX_EGRESS_SSH_USER || '' }}"
-  "$live_workflow|test-web-ai-text-live|MINIMAX_EGRESS_SSH_KNOWN_HOSTS: \${{ matrix.scenario == 'music' && vars.MINIMAX_EGRESS_SSH_KNOWN_HOSTS || '' }}"
+  "$live_workflow|test-web-ai-text-live|MUSIC_MODEL: \${{ matrix.scenario == 'music' && vars.MUSIC_MODEL || '' }}"
+  "$live_workflow|test-web-ai-text-live|VERTEX_CREDENTIALS_JSON: \${{ matrix.scenario == 'music' && secrets.VERTEX_CREDENTIALS_JSON || '' }}"
   "$live_workflow|test-web-ai-text-live|E2E_MM_GATEWAY_SOURCE_DIR: \${{ github.workspace }}/.tmp/mm-gateway"
   "$live_workflow|test-web-ai-text-live|Selected music-provider GitHub configuration is incomplete; skipping real browser music e2e."
-  "$live_workflow|test-web-ai-text-live|required_music_names+=(MINIMAX_TOKEN MINIMAX_UUID MINIMAX_EGRESS_SSH_KEY MINIMAX_EGRESS_SSH_HOST MINIMAX_EGRESS_SSH_USER MINIMAX_EGRESS_SSH_KNOWN_HOSTS)"
+  "$live_workflow|test-web-ai-text-live|if [[ \"\$MUSIC_PROVIDER\" == \"vertex\" ]]; then"
+  "$live_workflow|test-web-ai-text-live|required_music_names+=(VERTEX_CREDENTIALS_JSON)"
+  "$live_workflow|test-web-ai-text-live|required_music_names+=(MUSIC_API_KEY MUSIC_BASE_URL)"
   "$live_workflow|test-web-ai-text-live|../scripts/validate-live-ai-text-config.sh"
   "$live_workflow|test-web-live-talk-live|LIVE_TALK_API_KEY: \${{ secrets.LIVE_TALK_API_KEY }}"
   "$live_workflow|test-web-live-talk-live|../scripts/validate-live-talk-config.sh"
@@ -266,6 +258,21 @@ content_contracts=(
 for contract in "${content_contracts[@]}"; do
   IFS='|' read -r workflow job expected <<< "$contract"
   require "$job" "$expected" "$(workflow_job "$workflow" "$job")"
+done
+
+# Retired web-session credentials and SSH sidecar wiring must not return through
+# either provider entry point. Vertex and generic API-key paths above remain
+# positive contracts, so removing obsolete coverage cannot remove live coverage.
+for provider_workflow in "$api_workflow" "$live_workflow"; do
+  if grep -Eiq 'MINIMAX_|minimax[-_]music|MUSIC_AUTH=minimax|== "minimax"' "$provider_workflow"; then
+    echo "Provider workflows must not retain MiniMax session/SSH sidecar wiring" >&2
+    exit 1
+  fi
+done
+
+live_browser_block="$(workflow_job "$live_workflow" test-web-ai-text-live)"
+for scenario in practice reader-text reader-image music rss pet; do
+  require 'live browser coverage' "- scenario: $scenario" "$live_browser_block"
 done
 
 for browser_contract in \

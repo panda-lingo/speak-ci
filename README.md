@@ -40,8 +40,7 @@ either image build can begin. The reusable workflow layout is:
 The private workflow adapts, rather than blindly copies, the source reusable
 workflows. Its documented private-only overlays are the explicit
 `checkout_repository` / `checkout_ref` / `SPEAK_REPO_TOKEN` boundary,
-input-derived image tags, `music-e2e` environment isolation, the complete
-trusted `MINIMAX_EGRESS_SSH_*` requirement, and dispatcher self-test,
+input-derived image tags, `music-e2e` environment isolation, and dispatcher self-test,
 source-ref, and publication inputs. Test commands, matrix rows, timeout
 exceptions, and artifact contracts otherwise remain synchronized with
 `panda-lingo/speak`.
@@ -173,26 +172,28 @@ timeouts, topology, and result gate so new work cannot bypass coverage.
 
 1. In this repository, add an Actions secret named `SPEAK_REPO_TOKEN`.
 2. Use a token that can read the private `panda-lingo/speak` repository.
-3. Mirror `IMAGE_PROVIDER`, `IMAGE_BASE_URL`, `IMAGE_MODEL`, `MUSIC_PROVIDER`,
-   and `MUSIC_MODEL` as repository variables, plus `IMAGE_API_KEY` as a
-   repository secret. For a generic non-Vertex music backend, also configure
-   `MUSIC_BASE_URL` and `MUSIC_API_KEY`. For Vertex Lyria, set
-   `MUSIC_PROVIDER=vertex`, an explicit Vertex Lyria `MUSIC_MODEL` pin (for
-   example `lyria-3-pro-preview`), and the raw service-account JSON in
-   `VERTEX_CREDENTIALS_JSON`; `MUSIC_API_KEY` and `MUSIC_BASE_URL` are
-   deliberately not required. To verify the production incident path, set
-   `MUSIC_PROVIDER=minimax` and `MUSIC_MODEL=music-3.0`. Add short-lived
-   `MINIMAX_TOKEN`, `MINIMAX_UUID`, and `MINIMAX_EGRESS_SSH_KEY` secrets to the
-   `music-e2e` environment. Add the pinned forwarding host, user, and known-host
-   line as `MINIMAX_EGRESS_SSH_HOST`, `MINIMAX_EGRESS_SSH_USER`, and
-   `MINIMAX_EGRESS_SSH_KNOWN_HOSTS` repository variables. The server-side key
-   must force a bounded sleep command, permit only `www.minimaxi.com:443`, and
-   deny PTY, agent, and X11 access. Both direct and browser jobs start the
-   production adapter from the immutable image digest declared by Speak,
-   expose it only on a disposable private Docker network and runner loopback,
-   and route only its MiniMax traffic through the pinned tunnel. Delete all
-   three environment secrets and remove the server-side key after the trusted
-   run. The matrix maps only the music
+3. Mirror `IMAGE_PROVIDER`, `IMAGE_BASE_URL`, and `IMAGE_MODEL` as repository
+   variables, plus `IMAGE_API_KEY` as a repository secret. Music verification
+   uses the configured Vertex Lyria path: keep `MUSIC_PROVIDER=vertex` and the
+   same explicit Vertex Lyria `MUSIC_MODEL` pin in both `speak` and `speak-ci`,
+   with service-account JSON supplied only through `VERTEX_CREDENTIALS_JSON`.
+   Vertex deliberately does not require `MUSIC_API_KEY` or `MUSIC_BASE_URL`.
+   A generic non-Vertex API-key backend remains supported when explicitly
+   configured with `MUSIC_PROVIDER`, `MUSIC_MODEL`, `MUSIC_BASE_URL`, and
+   `MUSIC_API_KEY`.
+
+   The retired MiniMax web-session/SSH incident path is not a CI dependency:
+   workflows do not inject session credentials or egress SSH settings, start its
+   sidecar, or select a separate session-auth branch. Remove the obsolete
+   `MINIMAX_TOKEN`, `MINIMAX_UUID`, and `MINIMAX_EGRESS_SSH_KEY` configuration;
+   no credential values belong in this repository or in job summaries.
+   Workflow contracts positively require Vertex credential/model mapping and
+   the generic API-key branch, reject retired sidecar/session wiring, and retain
+   all six live browser scenarios, provider validation, bounded timeouts and
+   strict security/postflight gates. A green configuration skip is not provider
+   coverage; inspect actual real image/music execution before declaring success.
+
+   The matrix maps only the music
    row to `music-e2e`; all other live-browser rows use the secretless
    `ci-unprivileged` environment. The direct e2e derives the
    project from the service account and defaults Lyria to the global endpoint;

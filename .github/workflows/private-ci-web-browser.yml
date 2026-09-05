@@ -82,6 +82,12 @@ jobs:
             specs: tests/practice-language.e2e.spec.ts
           - name: language-pet
             specs: tests/pet-language.e2e.spec.ts
+          - name: language-exam
+            specs: tests/exam-language.e2e.spec.ts
+          - name: language-music
+            specs: tests/music-language.e2e.spec.ts
+          - name: language-community
+            specs: tests/community-language.e2e.spec.ts
           - name: voice-agent
             specs: tests/voice-agent-page.e2e.spec.ts
           - name: creative

@@ -95,7 +95,7 @@ lifecycles:
 | `tutoring` | `tutoring-page.e2e.spec.ts` |
 | `tutoring-classroom` | `tutoring-classroom.e2e.spec.ts`, `tutoring-classroom-upload.e2e.spec.ts` (shared lessons and compressed upload UI at four widths) |
 | `tutoring-assignments` | `tutoring-assignments.e2e.spec.ts` (student publication, member acceptance, payment handoff) |
-| `media-compression` | `media-upload-compression.e2e.spec.ts` (real browser image/audio/video encoders and output integrity) |
+| `media-compression` | `media-upload-compression.e2e.spec.ts`, `exam-media-upload.e2e.spec.ts` (native encoders, output integrity, and Exam submission metadata) |
 
 Successful tutoring and native media compression browser jobs retain their
 screenshots and codec evidence as workflow artifacts for review.

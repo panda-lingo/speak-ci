@@ -119,7 +119,7 @@ jobs:
           - name: tutoring-assignments
             specs: tests/tutoring-assignments.e2e.spec.ts
           - name: media-compression
-            specs: tests/media-upload-compression.e2e.spec.ts
+            specs: tests/media-upload-compression.e2e.spec.ts tests/exam-media-upload.e2e.spec.ts
     defaults:
       run:
         working-directory: ./web

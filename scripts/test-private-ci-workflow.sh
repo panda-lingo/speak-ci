@@ -360,7 +360,7 @@ memos|tests/memos-page.e2e.spec.ts
 tutoring|tests/tutoring-page.e2e.spec.ts
 tutoring-classroom|tests/tutoring-classroom.e2e.spec.ts tests/tutoring-classroom-upload.e2e.spec.ts
 tutoring-assignments|tests/tutoring-assignments.e2e.spec.ts
-media-compression|tests/media-upload-compression.e2e.spec.ts
+media-compression|tests/media-upload-compression.e2e.spec.ts tests/exam-media-upload.e2e.spec.ts
 EOF
 )"
 if [[ "$actual_web_site_matrix" != "$expected_web_site_matrix" ]]; then

@@ -213,7 +213,7 @@ timeouts, topology, and result gate so new work cannot bypass coverage.
 
    | Format | Required variables/secrets | Endpoint and authentication |
    | --- | --- | --- |
-   | `vertex` | `LIVE_TALK_MODEL` variable and `VERTEX_CREDENTIALS_JSON` secret | Default `https://aiplatform.googleapis.com`; optional `LIVE_TALK_BASE_URL` override. Derive project from service-account JSON and use `LIVE_TALK_VERTEX_LOCATION` when explicitly configured, otherwise `global`. Authenticate through the official Google Gen AI SDK in the backend. No `LIVE_TALK_API_KEY` required. |
+   | `vertex` | `LIVE_TALK_MODEL` variable and `VERTEX_CREDENTIALS_JSON` secret | Default `https://us-central1-aiplatform.googleapis.com`; optional `LIVE_TALK_BASE_URL` override. Derive project from service-account JSON and use `LIVE_TALK_VERTEX_LOCATION` when explicitly configured, otherwise `us-central1`. Authenticate through the official Google Gen AI SDK in the backend. No `LIVE_TALK_API_KEY` required. |
    | `gemini`, `openai` | `LIVE_TALK_MODEL`, `LIVE_TALK_BASE_URL` variables and `LIVE_TALK_API_KEY` secret | Explicit endpoint and plan API key. |
 
    The format is authoritative; unsupported formats and malformed Vertex
@@ -223,12 +223,14 @@ timeouts, topology, and result gate so new work cannot bypass coverage.
    `LIVE_TALK_VERTEX_LOCATION` is an optional lowercase location identifier
    scoped to this Live Talk job. The runner injects the selected value as
    `VERTEX_LOCATION` only into the API and discards ambient location overrides.
+   Empty endpoints and previous Vertex global/Gemini Developer API default
+   origins resolve to the regional default. Custom endpoints and explicitly
+   selected locations remain operator choices.
    It never chooses another region automatically after a provider failure.
    Music's separate global location mapping is unchanged.
    Google's [Live API model availability](https://firebase.google.com/docs/ai-logic/live-api?hl=en)
-   excludes Vertex Live models from `global`; the retained default is not a
-   supported-model claim. A supported region must be selected explicitly for
-   a successful provider exchange.
+   excludes Vertex Live models from `global`; the approved Live default is
+   `us-central1` with its regional API origin.
    The browser selects the provider through `/admin/plans`, verifies Vertex's
    auto-filled endpoint, and completes real chatbot and voice-agent calls.
    Both Vertex calls keep `live_provider=vertex` while using the compatible

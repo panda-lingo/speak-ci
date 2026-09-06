@@ -110,6 +110,8 @@ jobs:
             specs: tests/reader-selection-visual-explanation.e2e.spec.ts
           - name: memory
             specs: tests/memory-workspace.e2e.spec.ts
+          - name: momentum
+            specs: tests/momentum-page.e2e.spec.ts tests/momentum-voice-page.e2e.spec.ts
           - name: memos
             specs: tests/memos-page.e2e.spec.ts
           - name: tutoring
@@ -163,6 +165,15 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-sites-${{ matrix.name }}-attempt-${{ github.run_attempt }}
+          path: web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload Momentum browser evidence
+        if: always() && matrix.name == 'momentum'
+        uses: actions/upload-artifact@v7
+        with:
+          name: momentum-browser-attempt-${{ github.run_attempt }}
           path: web/test-results
           if-no-files-found: ignore
           retention-days: 7

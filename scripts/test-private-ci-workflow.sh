@@ -307,6 +307,9 @@ for browser_contract in \
   require "$job" 'Verify Chrome browser' "$browser_block"
 done
 
+require 'Momentum browser evidence' "if: always() && matrix.name == 'momentum'" "$(cat "$browser_workflow")"
+require 'Momentum browser evidence' 'name: momentum-browser-attempt-${{ github.run_attempt }}' "$(cat "$browser_workflow")"
+
 # The private checkout adapter may differ from the source workflow, but its
 # mock-site ownership map must remain an exact copy. Exact comparison catches
 # both missing coverage and accidental duplicate/aggregate execution.
@@ -356,6 +359,7 @@ voice-agent|tests/voice-agent-page.e2e.spec.ts
 creative|tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts tests/admin-live-provider.e2e.spec.ts
 reader-selection|tests/reader-selection-visual-explanation.e2e.spec.ts
 memory|tests/memory-workspace.e2e.spec.ts
+momentum|tests/momentum-page.e2e.spec.ts tests/momentum-voice-page.e2e.spec.ts
 memos|tests/memos-page.e2e.spec.ts
 tutoring|tests/tutoring-page.e2e.spec.ts
 tutoring-classroom|tests/tutoring-classroom.e2e.spec.ts tests/tutoring-classroom-upload.e2e.spec.ts

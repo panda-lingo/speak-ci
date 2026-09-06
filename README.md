@@ -1,5 +1,10 @@
 # speak-ci
 
+Momentum adds responsive planner and voice browser coverage. The dedicated shard
+checks calendar/Gantt/list, baseline/change/actual, recurrence, resources, and habit
+challenges. The existing SQLite/PostgreSQL full-stack journey also verifies real
+member persistence, cross-user isolation, and automatic website activities.
+
 Tutoring adds separate marketplace and classroom browser shards, including
 four device widths and two-participant audio/canvas collaboration. The API
 job provisions LibreOffice and CJK fonts for real private Office-to-PDF
@@ -53,7 +58,7 @@ exceptions, and artifact contracts otherwise remain synchronized with
 
 The dispatcher sparsely checks out the source browser workflow at the exact
 requested Speak ref. `scripts/test-private-ci-workflow.sh` compares that live
-source matrix with the private adapter and also enforces the current twenty-nine-row
+source matrix with the private adapter and also enforces the current thirty-row
 ownership map, making source-only additions a failing parity check.
 
 An adapter push-triggered run follows the matching branch name in Speak (for

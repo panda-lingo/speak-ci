@@ -115,7 +115,11 @@ jobs:
           - name: tutoring
             specs: tests/tutoring-page.e2e.spec.ts
           - name: tutoring-classroom
-            specs: tests/tutoring-classroom.e2e.spec.ts
+            specs: tests/tutoring-classroom.e2e.spec.ts tests/tutoring-classroom-upload.e2e.spec.ts
+          - name: tutoring-assignments
+            specs: tests/tutoring-assignments.e2e.spec.ts
+          - name: media-compression
+            specs: tests/media-upload-compression.e2e.spec.ts
     defaults:
       run:
         working-directory: ./web
@@ -163,8 +167,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Upload tutoring browser evidence
-        if: always() && startsWith(matrix.name, 'tutoring')
+      - name: Upload tutoring and media browser evidence
+        if: always() && (startsWith(matrix.name, 'tutoring') || matrix.name == 'media-compression')
         uses: actions/upload-artifact@v7
         with:
           name: tutoring-browser-${{ matrix.name }}-attempt-${{ github.run_attempt }}

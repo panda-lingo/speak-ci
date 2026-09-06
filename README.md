@@ -53,7 +53,7 @@ exceptions, and artifact contracts otherwise remain synchronized with
 
 The dispatcher sparsely checks out the source browser workflow at the exact
 requested Speak ref. `scripts/test-private-ci-workflow.sh` compares that live
-source matrix with the private adapter and also enforces the current twenty-seven-row
+source matrix with the private adapter and also enforces the current twenty-nine-row
 ownership map, making source-only additions a failing parity check.
 
 An adapter push-triggered run follows the matching branch name in Speak (for
@@ -62,7 +62,7 @@ branch changes the matrix, that automatic run can correctly reject the older
 source branch. Verification for that checkpoint is the manual dispatch with
 `source_ref` set to its exact pushed Speak SHA; retain the strict parity check.
 
-The current mock-site matrix mirrors the source workflow's twenty-five isolated
+The current mock-site matrix mirrors the source workflow's twenty-nine isolated
 lifecycles:
 
 | Matrix row | Source specs |
@@ -92,6 +92,13 @@ lifecycles:
 | `reader-selection` | `reader-selection-visual-explanation.e2e.spec.ts` |
 | `memory` | `memory-workspace.e2e.spec.ts` |
 | `memos` | `memos-page.e2e.spec.ts` |
+| `tutoring` | `tutoring-page.e2e.spec.ts` |
+| `tutoring-classroom` | `tutoring-classroom.e2e.spec.ts`, `tutoring-classroom-upload.e2e.spec.ts` (shared lessons and compressed upload UI at four widths) |
+| `tutoring-assignments` | `tutoring-assignments.e2e.spec.ts` (student publication, member acceptance, payment handoff) |
+| `media-compression` | `media-upload-compression.e2e.spec.ts` (real browser image/audio/video encoders and output integrity) |
+
+Successful tutoring and native media compression browser jobs retain their
+screenshots and codec evidence as workflow artifacts for review.
 
 Each row owns one fresh Next.js process and one Playwright worker. This keeps
 the longest standalone lifecycle out of a shared process while preserving the

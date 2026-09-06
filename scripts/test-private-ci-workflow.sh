@@ -327,6 +327,10 @@ web_site_matrix() {
 }
 
 actual_web_site_matrix="$(web_site_matrix "$browser_workflow")"
+if ! grep -Fq "if: always() && (startsWith(matrix.name, 'tutoring') || matrix.name == 'media-compression')" "$browser_workflow"; then
+  echo "Successful tutoring and media compression browser evidence must be retained" >&2
+  exit 1
+fi
 expected_web_site_matrix="$(cat <<'EOF'
 suite-quota|tests/standalone-sites-quota.e2e.spec.ts
 suite-pet|tests/standalone-sites-pet.e2e.spec.ts
@@ -354,7 +358,9 @@ reader-selection|tests/reader-selection-visual-explanation.e2e.spec.ts
 memory|tests/memory-workspace.e2e.spec.ts
 memos|tests/memos-page.e2e.spec.ts
 tutoring|tests/tutoring-page.e2e.spec.ts
-tutoring-classroom|tests/tutoring-classroom.e2e.spec.ts
+tutoring-classroom|tests/tutoring-classroom.e2e.spec.ts tests/tutoring-classroom-upload.e2e.spec.ts
+tutoring-assignments|tests/tutoring-assignments.e2e.spec.ts
+media-compression|tests/media-upload-compression.e2e.spec.ts
 EOF
 )"
 if [[ "$actual_web_site_matrix" != "$expected_web_site_matrix" ]]; then

@@ -112,6 +112,10 @@ jobs:
             specs: tests/memory-workspace.e2e.spec.ts
           - name: memos
             specs: tests/memos-page.e2e.spec.ts
+          - name: tutoring
+            specs: tests/tutoring-page.e2e.spec.ts
+          - name: tutoring-classroom
+            specs: tests/tutoring-classroom.e2e.spec.ts
     defaults:
       run:
         working-directory: ./web
@@ -155,6 +159,15 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-sites-${{ matrix.name }}-attempt-${{ github.run_attempt }}
+          path: web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload tutoring browser evidence
+        if: always() && startsWith(matrix.name, 'tutoring')
+        uses: actions/upload-artifact@v7
+        with:
+          name: tutoring-browser-${{ matrix.name }}-attempt-${{ github.run_attempt }}
           path: web/test-results
           if-no-files-found: ignore
           retention-days: 7

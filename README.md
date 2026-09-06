@@ -1,5 +1,11 @@
 # speak-ci
 
+Tutoring adds separate marketplace and classroom browser shards, including
+four device widths and two-participant audio/canvas collaboration. The API
+job provisions LibreOffice and CJK fonts for real private Office-to-PDF
+conversion verification. The adapter's ownership map mirrors these source
+workflow additions and verifies the exact dispatched source SHA.
+
 Desktop browser verification retains the source nine-minute job cap. Its
 five-minute Playwright journey deadline and bounded authored-step progress
 reporter leave time for safe postflight evidence; desktop browser traces/results
@@ -47,7 +53,7 @@ exceptions, and artifact contracts otherwise remain synchronized with
 
 The dispatcher sparsely checks out the source browser workflow at the exact
 requested Speak ref. `scripts/test-private-ci-workflow.sh` compares that live
-source matrix with the private adapter and also enforces the current twenty-five-row
+source matrix with the private adapter and also enforces the current twenty-seven-row
 ownership map, making source-only additions a failing parity check.
 
 An adapter push-triggered run follows the matching branch name in Speak (for

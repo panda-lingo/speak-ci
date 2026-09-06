@@ -353,6 +353,8 @@ creative|tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts t
 reader-selection|tests/reader-selection-visual-explanation.e2e.spec.ts
 memory|tests/memory-workspace.e2e.spec.ts
 memos|tests/memos-page.e2e.spec.ts
+tutoring|tests/tutoring-page.e2e.spec.ts
+tutoring-classroom|tests/tutoring-classroom.e2e.spec.ts
 EOF
 )"
 if [[ "$actual_web_site_matrix" != "$expected_web_site_matrix" ]]; then

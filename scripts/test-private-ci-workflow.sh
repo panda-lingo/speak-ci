@@ -252,6 +252,7 @@ content_contracts=(
   "$live_workflow|test-web-live-talk-live|LIVE_TALK_BASE_URL: \${{ vars.LIVE_TALK_BASE_URL }}"
   "$live_workflow|test-web-live-talk-live|LIVE_TALK_MODEL: \${{ vars.LIVE_TALK_MODEL }}"
   "$live_workflow|test-web-live-talk-live|LIVE_TALK_API_FORMAT: \${{ vars.LIVE_TALK_API_FORMAT }}"
+  "$live_workflow|test-web-live-talk-live|LIVE_TALK_VERTEX_LOCATION: \${{ vars.LIVE_TALK_VERTEX_LOCATION || 'global' }}"
   "$live_workflow|test-web-live-talk-live|VERTEX_CREDENTIALS_JSON: \${{ secrets.VERTEX_CREDENTIALS_JSON }}"
   "$live_workflow|test-web-live-talk-live|required_names=(LIVE_TALK_MODEL LIVE_TALK_API_FORMAT)"
   "$live_workflow|test-web-live-talk-live|vertex) required_names+=(VERTEX_CREDENTIALS_JSON)"
@@ -266,6 +267,17 @@ content_contracts=(
 for contract in "${content_contracts[@]}"; do
   IFS='|' read -r workflow job expected <<< "$contract"
   require "$job" "$expected" "$(workflow_job "$workflow" "$job")"
+done
+
+# Live's explicit location selector cannot alter the independent music jobs.
+for music_job_contract in \
+  "$api_workflow|test-api-mm-gateway-e2e" \
+  "$live_workflow|test-web-ai-text-live"; do
+  IFS='|' read -r music_workflow music_job <<< "$music_job_contract"
+  if grep -Fq 'LIVE_TALK_VERTEX_LOCATION' <<< "$(workflow_job "$music_workflow" "$music_job")"; then
+    echo "Live Talk location selection must not be injected into $music_job" >&2
+    exit 1
+  fi
 done
 
 # Retired web-session credentials and SSH sidecar wiring must not return through

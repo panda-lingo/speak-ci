@@ -213,13 +213,22 @@ timeouts, topology, and result gate so new work cannot bypass coverage.
 
    | Format | Required variables/secrets | Endpoint and authentication |
    | --- | --- | --- |
-   | `vertex` | `LIVE_TALK_MODEL` variable and `VERTEX_CREDENTIALS_JSON` secret | Default `https://aiplatform.googleapis.com`; optional `LIVE_TALK_BASE_URL` override. Derive project from service-account JSON, use global location, and authenticate through the official Google Gen AI SDK in the backend. No `LIVE_TALK_API_KEY` required. |
+   | `vertex` | `LIVE_TALK_MODEL` variable and `VERTEX_CREDENTIALS_JSON` secret | Default `https://aiplatform.googleapis.com`; optional `LIVE_TALK_BASE_URL` override. Derive project from service-account JSON and use `LIVE_TALK_VERTEX_LOCATION` when explicitly configured, otherwise `global`. Authenticate through the official Google Gen AI SDK in the backend. No `LIVE_TALK_API_KEY` required. |
    | `gemini`, `openai` | `LIVE_TALK_MODEL`, `LIVE_TALK_BASE_URL` variables and `LIVE_TALK_API_KEY` secret | Explicit endpoint and plan API key. |
 
    The format is authoritative; unsupported formats and malformed Vertex
    credentials fail preflight. Only missing selected-provider configuration
    may skip a secretless run. The full-stack runner passes Vertex credentials
    only to the API; Playwright and Next receive a non-secret readiness marker.
+   `LIVE_TALK_VERTEX_LOCATION` is an optional lowercase location identifier
+   scoped to this Live Talk job. The runner injects the selected value as
+   `VERTEX_LOCATION` only into the API and discards ambient location overrides.
+   It never chooses another region automatically after a provider failure.
+   Music's separate global location mapping is unchanged.
+   Google's [Live API model availability](https://firebase.google.com/docs/ai-logic/live-api?hl=en)
+   excludes Vertex Live models from `global`; the retained default is not a
+   supported-model claim. A supported region must be selected explicitly for
+   a successful provider exchange.
    The browser selects the provider through `/admin/plans`, verifies Vertex's
    auto-filled endpoint, and completes real chatbot and voice-agent calls.
    Both Vertex calls keep `live_provider=vertex` while using the compatible

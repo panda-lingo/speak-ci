@@ -206,6 +206,7 @@ jobs:
           LIVE_TALK_BASE_URL: ${{ vars.LIVE_TALK_BASE_URL }}
           LIVE_TALK_MODEL: ${{ vars.LIVE_TALK_MODEL }}
           LIVE_TALK_API_FORMAT: ${{ vars.LIVE_TALK_API_FORMAT }}
+          LIVE_TALK_VERTEX_LOCATION: ${{ vars.LIVE_TALK_VERTEX_LOCATION || 'global' }}
           VERTEX_CREDENTIALS_JSON: ${{ secrets.VERTEX_CREDENTIALS_JSON }}
           PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: |

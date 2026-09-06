@@ -309,6 +309,7 @@ done
 
 require 'Momentum browser evidence' "if: always() && matrix.name == 'momentum'" "$(cat "$browser_workflow")"
 require 'Momentum browser evidence' 'name: momentum-browser-attempt-${{ github.run_attempt }}' "$(cat "$browser_workflow")"
+require 'Momentum CJK fonts' 'sudo apt-get install -y --no-install-recommends fonts-noto-cjk' "$(cat "$browser_workflow")"
 
 # The private checkout adapter may differ from the source workflow, but its
 # mock-site ownership map must remain an exact copy. Exact comparison catches

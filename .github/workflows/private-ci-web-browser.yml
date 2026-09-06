@@ -154,6 +154,12 @@ jobs:
       - name: Verify Chrome browser
         run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
 
+      - name: Install Momentum CJK fonts
+        if: matrix.name == 'momentum'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+
       - name: Run mock-site browser shard
         env:
           NEXT_PUBLIC_MOCK_API: "true"

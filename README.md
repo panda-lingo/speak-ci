@@ -4,6 +4,8 @@ Momentum adds responsive planner and voice browser coverage. The dedicated shard
 checks calendar/Gantt/list, baseline/change/actual, recurrence, resources, and habit
 challenges. The existing SQLite/PostgreSQL full-stack journey also verifies real
 member persistence, cross-user isolation, and automatic website activities.
+The Momentum runner installs Noto CJK fonts before browser execution so Chinese
+and Japanese screenshots verify readable text with the site's native fallbacks.
 
 Tutoring adds separate marketplace and classroom browser shards, including
 four device widths and two-participant audio/canvas collaboration. The API

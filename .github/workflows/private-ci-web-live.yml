@@ -206,10 +206,19 @@ jobs:
           LIVE_TALK_BASE_URL: ${{ vars.LIVE_TALK_BASE_URL }}
           LIVE_TALK_MODEL: ${{ vars.LIVE_TALK_MODEL }}
           LIVE_TALK_API_FORMAT: ${{ vars.LIVE_TALK_API_FORMAT }}
+          VERTEX_CREDENTIALS_JSON: ${{ secrets.VERTEX_CREDENTIALS_JSON }}
           PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: |
           set -euo pipefail
-          for name in LIVE_TALK_API_KEY LIVE_TALK_BASE_URL LIVE_TALK_MODEL LIVE_TALK_API_FORMAT; do
+          LIVE_TALK_API_FORMAT="$(printf '%s' "$LIVE_TALK_API_FORMAT" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          required_names=(LIVE_TALK_MODEL LIVE_TALK_API_FORMAT)
+          case "$LIVE_TALK_API_FORMAT" in
+            vertex) required_names+=(VERTEX_CREDENTIALS_JSON) ;;
+            gemini|openai) required_names+=(LIVE_TALK_API_KEY LIVE_TALK_BASE_URL) ;;
+            "") ;;
+            *) ../scripts/validate-live-talk-config.sh; exit 1 ;;
+          esac
+          for name in "${required_names[@]}"; do
             if [[ -z "${!name:-}" ]]; then
               echo "LIVE_TALK_* GitHub configuration is incomplete; skipping real Live Talk browser e2e." | tee -a "$GITHUB_STEP_SUMMARY"
               exit 0
@@ -224,7 +233,7 @@ jobs:
           npm run test:e2e:ci:live-talk-live
 
       - name: Upload real Live Talk browser failure artifacts
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-live-talk-live-attempt-${{ github.run_attempt }}

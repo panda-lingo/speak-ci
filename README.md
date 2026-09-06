@@ -82,7 +82,7 @@ lifecycles:
 | `language-admin-settings` | `admin-settings-language.e2e.spec.ts` (native config, plan fields, billing and promo recovery) |
 | `language-graphics` | `graphic-books-language.e2e.spec.ts` (native illustrated-book creation and narration lifecycle) |
 | `voice-agent` | `voice-agent-page.e2e.spec.ts` |
-| `creative` | `music-page.e2e.spec.ts`, `graphic-book-workspace.e2e.spec.ts`, `admin-plan-mm-gateway.e2e.spec.ts` |
+| `creative` | `music-page.e2e.spec.ts`, `graphic-book-workspace.e2e.spec.ts`, `admin-plan-mm-gateway.e2e.spec.ts`, `admin-live-provider.e2e.spec.ts` (provider defaults and persistence at 375, 768, and 1440 pixels) |
 | `reader-selection` | `reader-selection-visual-explanation.e2e.spec.ts` |
 | `memory` | `memory-workspace.e2e.spec.ts` |
 | `memos` | `memos-page.e2e.spec.ts` |
@@ -115,9 +115,9 @@ The workflow contains the copied `panda-lingo/speak` test, build, and publish jo
   non-secret postflight evidence on every result
 - run the source repository's uncached OMNI audio-practice, pinned music-analysis,
   and voice-memo e2e contract when the mirrored `OMNI_*` settings are present
-- run the source repository's real Live Talk browser journey when the mirrored
-  `LIVE_TALK_*` settings are present; the journey configures the Free plan
-  through the Admin Portal UI before it starts a learner conversation
+- run the source repository's real Live Talk and voice-agent browser journey
+  when the selected provider's settings are present; the journey configures
+  the Free plan through the Admin Portal UI before both learner exchanges
 - bootstrap Redroid without an APT index refresh: use the hosted runner's
   tool baseline, download the official Android Platform-Tools archive only when
   `adb` is absent, make only a bounded no-index repair attempt for a missing
@@ -207,12 +207,24 @@ timeouts, topology, and result gate so new work cannot bypass coverage.
    variables and `OMNI_API_KEY` as a repository secret. Repository-level
    values take precedence over inherited organization values and keep all four
    settings bound to the same provider.
-5. Mirror `LIVE_TALK_API_FORMAT`, `LIVE_TALK_BASE_URL`, and `LIVE_TALK_MODEL`
-   as repository variables and `LIVE_TALK_API_KEY` as a repository secret. The
-   format must be `gemini` or `openai`, and all four values must describe the
-   same realtime provider endpoint. The workflow passes them only to the
-   Live Talk job, whose browser setup writes them through `/admin/plans` rather
-   than pre-seeding provider settings through an API shortcut.
+5. Mirror the Live Talk provider mapping below. The current selection is
+   `LIVE_TALK_API_FORMAT=vertex` and
+   `LIVE_TALK_MODEL=gemini-live-2.5-flash-native-audio`.
+
+   | Format | Required variables/secrets | Endpoint and authentication |
+   | --- | --- | --- |
+   | `vertex` | `LIVE_TALK_MODEL` variable and `VERTEX_CREDENTIALS_JSON` secret | Default `https://aiplatform.googleapis.com`; optional `LIVE_TALK_BASE_URL` override. Derive project from service-account JSON, use global location, and authenticate through the official Google Gen AI SDK in the backend. No `LIVE_TALK_API_KEY` required. |
+   | `gemini`, `openai` | `LIVE_TALK_MODEL`, `LIVE_TALK_BASE_URL` variables and `LIVE_TALK_API_KEY` secret | Explicit endpoint and plan API key. |
+
+   The format is authoritative; unsupported formats and malformed Vertex
+   credentials fail preflight. Only missing selected-provider configuration
+   may skip a secretless run. The full-stack runner passes Vertex credentials
+   only to the API; Playwright and Next receive a non-secret readiness marker.
+   The browser selects the provider through `/admin/plans`, verifies Vertex's
+   auto-filled endpoint, and completes real chatbot and voice-agent calls.
+   Both Vertex calls keep `live_provider=vertex` while using the compatible
+   `gemini` adapter and ephemeral tickets. The combined browser journey has a
+   five-minute test deadline inside the existing nine-minute job cap.
 6. Keep the workflow job permissions at `packages: write` so the repository `GITHUB_TOKEN` can publish `ghcr.io/panda-lingo/speak`.
 
 Without `SPEAK_REPO_TOKEN`, the workflow can start in this public repo, but every job that checks out the private source tree will fail.

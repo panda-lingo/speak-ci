@@ -230,6 +230,7 @@ content_contracts=(
   "$standalone_workflow|test-standalone-operations|./scripts/test-standalone-operations.sh"
   "$standalone_workflow|test-local-compose-security|./scripts/test-local-compose-security.sh"
   "$browser_workflow|test-web-sites|tests/admin-plan-mm-gateway.e2e.spec.ts"
+  "$browser_workflow|test-web-sites|tests/admin-live-provider.e2e.spec.ts"
   "$browser_workflow|test-web-base-path|npm run test:e2e:base-path"
   "$live_workflow|test-web-ai-text-live|max-parallel: 1"
   "$live_workflow|test-web-ai-text-live|name: \${{ matrix.environment }}"
@@ -248,6 +249,13 @@ content_contracts=(
   "$live_workflow|test-web-ai-text-live|required_music_names+=(MUSIC_API_KEY MUSIC_BASE_URL)"
   "$live_workflow|test-web-ai-text-live|../scripts/validate-live-ai-text-config.sh"
   "$live_workflow|test-web-live-talk-live|LIVE_TALK_API_KEY: \${{ secrets.LIVE_TALK_API_KEY }}"
+  "$live_workflow|test-web-live-talk-live|LIVE_TALK_BASE_URL: \${{ vars.LIVE_TALK_BASE_URL }}"
+  "$live_workflow|test-web-live-talk-live|LIVE_TALK_MODEL: \${{ vars.LIVE_TALK_MODEL }}"
+  "$live_workflow|test-web-live-talk-live|LIVE_TALK_API_FORMAT: \${{ vars.LIVE_TALK_API_FORMAT }}"
+  "$live_workflow|test-web-live-talk-live|VERTEX_CREDENTIALS_JSON: \${{ secrets.VERTEX_CREDENTIALS_JSON }}"
+  "$live_workflow|test-web-live-talk-live|required_names=(LIVE_TALK_MODEL LIVE_TALK_API_FORMAT)"
+  "$live_workflow|test-web-live-talk-live|vertex) required_names+=(VERTEX_CREDENTIALS_JSON)"
+  "$live_workflow|test-web-live-talk-live|gemini|openai) required_names+=(LIVE_TALK_API_KEY LIVE_TALK_BASE_URL)"
   "$live_workflow|test-web-live-talk-live|../scripts/validate-live-talk-config.sh"
   "$live_workflow|test-web-live-talk-live|npm run test:e2e:ci:live-talk-live"
   "$e2e_workflow|test-web-e2e-redroid-mobile|nohup bash -c"
@@ -329,7 +337,7 @@ language-admin-overview|tests/admin-overview-language.e2e.spec.ts
 language-admin-settings|tests/admin-settings-language.e2e.spec.ts
 language-graphics|tests/graphic-books-language.e2e.spec.ts
 voice-agent|tests/voice-agent-page.e2e.spec.ts
-creative|tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts
+creative|tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts tests/admin-live-provider.e2e.spec.ts
 reader-selection|tests/reader-selection-visual-explanation.e2e.spec.ts
 memory|tests/memory-workspace.e2e.spec.ts
 memos|tests/memos-page.e2e.spec.ts

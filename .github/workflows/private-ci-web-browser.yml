@@ -105,7 +105,7 @@ jobs:
           - name: voice-agent
             specs: tests/voice-agent-page.e2e.spec.ts
           - name: creative
-            specs: tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts
+            specs: tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts tests/admin-live-provider.e2e.spec.ts
           - name: reader-selection
             specs: tests/reader-selection-visual-explanation.e2e.spec.ts
           - name: memory

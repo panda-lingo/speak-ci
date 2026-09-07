@@ -311,6 +311,17 @@ require 'Momentum browser evidence' "if: always() && matrix.name == 'momentum'" 
 require 'Momentum browser evidence' 'name: momentum-browser-attempt-${{ github.run_attempt }}' "$(cat "$browser_workflow")"
 require 'Momentum CJK fonts' 'sudo apt-get install -y --no-install-recommends fonts-noto-cjk' "$(cat "$browser_workflow")"
 
+browser_sites_block="$(workflow_job "$browser_workflow" test-web-sites)"
+dashboard_evidence_step="$(workflow_step "$browser_sites_block" 'Upload dashboard browser evidence')"
+require 'Dashboard browser evidence' "if: always() && matrix.name == 'dashboard'" "$dashboard_evidence_step"
+require 'Dashboard browser evidence' 'uses: actions/upload-artifact@v7' "$dashboard_evidence_step"
+require 'Dashboard browser evidence' 'name: dashboard-browser-attempt-${{ github.run_attempt }}' "$dashboard_evidence_step"
+require 'Dashboard browser evidence' 'path: web/test-results' "$dashboard_evidence_step"
+require 'Dashboard browser evidence' 'retention-days: 7' "$dashboard_evidence_step"
+dashboard_fonts_step="$(workflow_step "$browser_sites_block" 'Install dashboard and Momentum CJK fonts')"
+require 'Dashboard CJK fonts' "if: matrix.name == 'momentum' || matrix.name == 'dashboard'" "$dashboard_fonts_step"
+require 'Dashboard CJK fonts' 'sudo apt-get install -y --no-install-recommends fonts-noto-cjk' "$dashboard_fonts_step"
+
 # The private checkout adapter may differ from the source workflow, but its
 # mock-site ownership map must remain an exact copy. Exact comparison catches
 # both missing coverage and accidental duplicate/aggregate execution.
@@ -336,6 +347,7 @@ if ! grep -Fq "if: always() && (startsWith(matrix.name, 'tutoring') || matrix.na
   exit 1
 fi
 expected_web_site_matrix="$(cat <<'EOF'
+dashboard|tests/dashboard-overview.e2e.spec.ts
 suite-quota|tests/standalone-sites-quota.e2e.spec.ts
 suite-pet|tests/standalone-sites-pet.e2e.spec.ts
 suite-availability|tests/standalone-sites-availability.e2e.spec.ts

@@ -1,5 +1,14 @@
 # speak-ci
 
+Dashboard verification reads recorded metrics for all ten learning products,
+recent activity, vocabulary reviews, and saved Momentum plans. Its dedicated
+browser shard covers partial failures, retry, guest/account boundaries, and
+375/768/1024/1440px layouts in every English/Chinese/Japanese and light/dark
+combination. Noto CJK fonts and always-uploaded dashboard screenshots make the
+exact dispatched source commit's rendered output reviewable on every result.
+The existing full-stack reader journey also verifies dashboard metrics against
+owned source records and follows the saved reading position.
+
 Momentum adds responsive planner and voice browser coverage. The dedicated shard
 checks calendar/Gantt/list, baseline/change/actual, recurrence, resources, and habit
 challenges. The existing SQLite/PostgreSQL full-stack journey also verifies real
@@ -60,7 +69,7 @@ exceptions, and artifact contracts otherwise remain synchronized with
 
 The dispatcher sparsely checks out the source browser workflow at the exact
 requested Speak ref. `scripts/test-private-ci-workflow.sh` compares that live
-source matrix with the private adapter and also enforces the current thirty-row
+source matrix with the private adapter and also enforces the current thirty-one-row
 ownership map, making source-only additions a failing parity check.
 
 An adapter push-triggered run follows the matching branch name in Speak (for
@@ -69,11 +78,12 @@ branch changes the matrix, that automatic run can correctly reject the older
 source branch. Verification for that checkpoint is the manual dispatch with
 `source_ref` set to its exact pushed Speak SHA; retain the strict parity check.
 
-The current mock-site matrix mirrors the source workflow's twenty-nine isolated
+The current mock-site matrix mirrors the source workflow's thirty-one isolated
 lifecycles:
 
 | Matrix row | Source specs |
 | --- | --- |
+| `dashboard` | `dashboard-overview.e2e.spec.ts` (recorded metrics, suggestions, plans, account isolation, localized responsive layouts) |
 | `suite-quota` | `standalone-sites-quota.e2e.spec.ts` |
 | `suite-pet` | `standalone-sites-pet.e2e.spec.ts` |
 | `suite-availability` | `standalone-sites-availability.e2e.spec.ts` |
@@ -98,6 +108,7 @@ lifecycles:
 | `creative` | `music-page.e2e.spec.ts`, `graphic-book-workspace.e2e.spec.ts`, `admin-plan-mm-gateway.e2e.spec.ts`, `admin-live-provider.e2e.spec.ts` (provider defaults and persistence at 375, 768, and 1440 pixels) |
 | `reader-selection` | `reader-selection-visual-explanation.e2e.spec.ts` |
 | `memory` | `memory-workspace.e2e.spec.ts` |
+| `momentum` | `momentum-page.e2e.spec.ts`, `momentum-voice-page.e2e.spec.ts` |
 | `memos` | `memos-page.e2e.spec.ts` |
 | `tutoring` | `tutoring-page.e2e.spec.ts` |
 | `tutoring-classroom` | `tutoring-classroom.e2e.spec.ts`, `tutoring-classroom-upload.e2e.spec.ts` (shared lessons and compressed upload UI at four widths) |

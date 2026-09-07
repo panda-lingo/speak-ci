@@ -276,3 +276,13 @@ dispatching a live run; GitHub otherwise resolves any organization defaults.
 The Live Talk job follows the same explicit-no-op rule only when its entire
 `LIVE_TALK_*` configuration is absent or incomplete; a non-empty unsupported
 format fails as a configuration error.
+
+## Language Exchange verification
+
+The private browser matrix mirrors the source repository's `exchange` and
+`exchange-room` shards. The first verifies availability, search, matching and
+reminders at phone, tablet and desktop sizes; the second verifies two-participant
+audio, shared canvas, consent and private feedback. Both preserve screenshots
+and traces, and install CJK fonts for Chinese and Japanese evidence. Source
+Go integration tests and web unit tests continue to run for the exact requested
+`source_ref`; image publication remains gated by all required jobs.

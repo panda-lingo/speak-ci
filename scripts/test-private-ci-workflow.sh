@@ -341,6 +341,12 @@ web_site_matrix() {
 '
 }
 
+exchange_evidence_step="$(workflow_step "$browser_sites_block" 'Upload language exchange browser evidence')"
+require 'Exchange browser evidence' "if: always() && startsWith(matrix.name, 'exchange')" "$exchange_evidence_step"
+require 'Exchange browser evidence' 'name: exchange-browser-${{ matrix.name }}-attempt-${{ github.run_attempt }}' "$exchange_evidence_step"
+require 'Exchange browser evidence' 'path: web/test-results' "$exchange_evidence_step"
+require 'Exchange CJK fonts' "startsWith(matrix.name, 'exchange')" "$dashboard_fonts_step"
+
 actual_web_site_matrix="$(web_site_matrix "$browser_workflow")"
 if ! grep -Fq "if: always() && (startsWith(matrix.name, 'tutoring') || matrix.name == 'media-compression')" "$browser_workflow"; then
   echo "Successful tutoring and media compression browser evidence must be retained" >&2
@@ -374,6 +380,8 @@ reader-selection|tests/reader-selection-visual-explanation.e2e.spec.ts
 memory|tests/memory-workspace.e2e.spec.ts
 momentum|tests/momentum-page.e2e.spec.ts tests/momentum-voice-page.e2e.spec.ts
 memos|tests/memos-page.e2e.spec.ts
+exchange|tests/exchange-page.e2e.spec.ts tests/exchange-reminders.e2e.spec.ts
+exchange-room|tests/exchange-room.e2e.spec.ts
 tutoring|tests/tutoring-page.e2e.spec.ts
 tutoring-classroom|tests/tutoring-classroom.e2e.spec.ts tests/tutoring-classroom-upload.e2e.spec.ts
 tutoring-assignments|tests/tutoring-assignments.e2e.spec.ts

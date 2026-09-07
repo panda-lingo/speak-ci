@@ -116,6 +116,10 @@ jobs:
             specs: tests/momentum-page.e2e.spec.ts tests/momentum-voice-page.e2e.spec.ts
           - name: memos
             specs: tests/memos-page.e2e.spec.ts
+          - name: exchange
+            specs: tests/exchange-page.e2e.spec.ts tests/exchange-reminders.e2e.spec.ts
+          - name: exchange-room
+            specs: tests/exchange-room.e2e.spec.ts
           - name: tutoring
             specs: tests/tutoring-page.e2e.spec.ts
           - name: tutoring-classroom
@@ -157,7 +161,7 @@ jobs:
         run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
 
       - name: Install dashboard and Momentum CJK fonts
-        if: matrix.name == 'momentum' || matrix.name == 'dashboard'
+        if: matrix.name == 'momentum' || matrix.name == 'dashboard' || startsWith(matrix.name, 'exchange')
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends fonts-noto-cjk
@@ -191,6 +195,15 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: dashboard-browser-attempt-${{ github.run_attempt }}
+          path: web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload language exchange browser evidence
+        if: always() && startsWith(matrix.name, 'exchange')
+        uses: actions/upload-artifact@v7
+        with:
+          name: exchange-browser-${{ matrix.name }}-attempt-${{ github.run_attempt }}
           path: web/test-results
           if-no-files-found: ignore
           retention-days: 7

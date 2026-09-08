@@ -286,3 +286,9 @@ audio, shared canvas, consent and private feedback. Both preserve screenshots
 and traces, and install CJK fonts for Chinese and Japanese evidence. Source
 Go integration tests and web unit tests continue to run for the exact requested
 `source_ref`; image publication remains gated by all required jobs.
+
+Canvas browser coverage mirrors the selected Speak source commit: the `canvas`
+shard owns `canvas-page.e2e.spec.ts` and `canvas-voice-page.e2e.spec.ts`, installs
+Noto CJK fonts, and always retains `canvas-browser-attempt-*` screenshots and
+traces. The private workflow contract checks both the exact source matrix and
+the Canvas evidence policy before image publication.

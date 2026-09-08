@@ -114,6 +114,8 @@ jobs:
             specs: tests/memory-workspace.e2e.spec.ts
           - name: momentum
             specs: tests/momentum-page.e2e.spec.ts tests/momentum-voice-page.e2e.spec.ts
+          - name: canvas
+            specs: tests/canvas-page.e2e.spec.ts tests/canvas-voice-page.e2e.spec.ts
           - name: memos
             specs: tests/memos-page.e2e.spec.ts
           - name: exchange
@@ -161,7 +163,7 @@ jobs:
         run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
 
       - name: Install dashboard and Momentum CJK fonts
-        if: matrix.name == 'momentum' || matrix.name == 'dashboard' || startsWith(matrix.name, 'exchange')
+        if: matrix.name == 'momentum' || matrix.name == 'dashboard' || matrix.name == 'canvas' || startsWith(matrix.name, 'exchange')
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends fonts-noto-cjk
@@ -186,6 +188,15 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: momentum-browser-attempt-${{ github.run_attempt }}
+          path: web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload Canvas browser evidence
+        if: always() && matrix.name == 'canvas'
+        uses: actions/upload-artifact@v7
+        with:
+          name: canvas-browser-attempt-${{ github.run_attempt }}
           path: web/test-results
           if-no-files-found: ignore
           retention-days: 7

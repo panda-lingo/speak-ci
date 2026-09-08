@@ -68,6 +68,8 @@ jobs:
             specs: tests/standalone-sites-quota.e2e.spec.ts
           - name: suite-pet
             specs: tests/standalone-sites-pet.e2e.spec.ts
+          - name: suite-pet-discovery
+            specs: tests/pet-onboarding-discovery.e2e.spec.ts
           - name: suite-availability
             specs: tests/standalone-sites-availability.e2e.spec.ts
           - name: language
@@ -163,7 +165,7 @@ jobs:
         run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
 
       - name: Install dashboard and Momentum CJK fonts
-        if: matrix.name == 'momentum' || matrix.name == 'dashboard' || matrix.name == 'canvas' || startsWith(matrix.name, 'exchange')
+        if: matrix.name == 'momentum' || matrix.name == 'dashboard' || matrix.name == 'canvas' || matrix.name == 'suite-pet-discovery' || startsWith(matrix.name, 'exchange')
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends fonts-noto-cjk
@@ -188,6 +190,15 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: momentum-browser-attempt-${{ github.run_attempt }}
+          path: web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload Panda onboarding browser evidence
+        if: always() && matrix.name == 'suite-pet-discovery'
+        uses: actions/upload-artifact@v7
+        with:
+          name: pet-onboarding-browser-attempt-${{ github.run_attempt }}
           path: web/test-results
           if-no-files-found: ignore
           retention-days: 7

@@ -330,6 +330,14 @@ require 'Canvas browser evidence' 'path: web/test-results' "$canvas_evidence_ste
 require 'Canvas browser evidence' 'retention-days: 7' "$canvas_evidence_step"
 require 'Canvas CJK fonts' "matrix.name == 'canvas'" "$dashboard_fonts_step"
 
+panda_evidence_step="$(workflow_step "$browser_sites_block" 'Upload Panda onboarding browser evidence')"
+require 'Panda onboarding browser evidence' "if: always() && matrix.name == 'suite-pet-discovery'" "$panda_evidence_step"
+require 'Panda onboarding browser evidence' 'uses: actions/upload-artifact@v7' "$panda_evidence_step"
+require 'Panda onboarding browser evidence' 'name: pet-onboarding-browser-attempt-${{ github.run_attempt }}' "$panda_evidence_step"
+require 'Panda onboarding browser evidence' 'path: web/test-results' "$panda_evidence_step"
+require 'Panda onboarding browser evidence' 'retention-days: 7' "$panda_evidence_step"
+require 'Panda onboarding CJK fonts' "matrix.name == 'suite-pet-discovery'" "$dashboard_fonts_step"
+
 # The private checkout adapter may differ from the source workflow, but its
 # mock-site ownership map must remain an exact copy. Exact comparison catches
 # both missing coverage and accidental duplicate/aggregate execution.
@@ -364,6 +372,7 @@ expected_web_site_matrix="$(cat <<'EOF'
 dashboard|tests/dashboard-overview.e2e.spec.ts
 suite-quota|tests/standalone-sites-quota.e2e.spec.ts
 suite-pet|tests/standalone-sites-pet.e2e.spec.ts
+suite-pet-discovery|tests/pet-onboarding-discovery.e2e.spec.ts
 suite-availability|tests/standalone-sites-availability.e2e.spec.ts
 language|tests/dictionary-page.e2e.spec.ts tests/speech-grammar-results.e2e.spec.ts
 language-switching|tests/learning-language.e2e.spec.ts

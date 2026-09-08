@@ -9,6 +9,14 @@ exact dispatched source commit's rendered output reviewable on every result.
 The existing full-stack reader journey also verifies dashboard metrics against
 owned source records and follows the saved reading position.
 
+Dashboard overview and Panda discovery have independent nine-minute browser
+jobs. The `dashboard` shard owns the 35 overview cases; `suite-pet-discovery`
+owns the unchanged 35 guide discovery, responsive, replay, and media-interruption
+cases through `pet-onboarding-discovery.e2e.spec.ts`. Both install Noto CJK fonts
+and always retain their screenshots. The discovery artifact is named
+`pet-onboarding-browser-attempt-*`. Source/adapter matrix and aggregate spec
+contracts preserve every scenario exactly once, including all three languages.
+
 Momentum adds responsive planner and voice browser coverage. The dedicated shard
 checks calendar/Gantt/list, baseline/change/actual, recurrence, resources, and habit
 challenges. The existing SQLite/PostgreSQL full-stack journey also verifies real
@@ -78,7 +86,7 @@ branch changes the matrix, that automatic run can correctly reject the older
 source branch. Verification for that checkpoint is the manual dispatch with
 `source_ref` set to its exact pushed Speak SHA; retain the strict parity check.
 
-The current mock-site matrix mirrors the source workflow's thirty-one isolated
+The current mock-site matrix mirrors the source workflow's bounded, isolated
 lifecycles:
 
 | Matrix row | Source specs |
@@ -86,6 +94,7 @@ lifecycles:
 | `dashboard` | `dashboard-overview.e2e.spec.ts` (recorded metrics, suggestions, plans, account isolation, localized responsive layouts) |
 | `suite-quota` | `standalone-sites-quota.e2e.spec.ts` |
 | `suite-pet` | `standalone-sites-pet.e2e.spec.ts` |
+| `suite-pet-discovery` | `pet-onboarding-discovery.e2e.spec.ts` (guide navigation, localized responsive lessons, replay, and media interruption) |
 | `suite-availability` | `standalone-sites-availability.e2e.spec.ts` |
 | `language` | `dictionary-page.e2e.spec.ts`, `speech-grammar-results.e2e.spec.ts` |
 | `language-switching` | `learning-language.e2e.spec.ts` (Chinese/Japanese selection, enrollment, persistence, guest isolation, responsive UI) |
@@ -109,6 +118,7 @@ lifecycles:
 | `reader-selection` | `reader-selection-visual-explanation.e2e.spec.ts` |
 | `memory` | `memory-workspace.e2e.spec.ts` |
 | `momentum` | `momentum-page.e2e.spec.ts`, `momentum-voice-page.e2e.spec.ts` |
+| `canvas` | `canvas-page.e2e.spec.ts`, `canvas-voice-page.e2e.spec.ts` (notebooks, multimedia, voice, and responsive evidence) |
 | `memos` | `memos-page.e2e.spec.ts` |
 | `tutoring` | `tutoring-page.e2e.spec.ts` |
 | `tutoring-classroom` | `tutoring-classroom.e2e.spec.ts`, `tutoring-classroom-upload.e2e.spec.ts` (shared lessons and compressed upload UI at four widths) |

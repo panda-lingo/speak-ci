@@ -322,6 +322,14 @@ dashboard_fonts_step="$(workflow_step "$browser_sites_block" 'Install dashboard 
 require 'Dashboard CJK fonts' "if: matrix.name == 'momentum' || matrix.name == 'dashboard'" "$dashboard_fonts_step"
 require 'Dashboard CJK fonts' 'sudo apt-get install -y --no-install-recommends fonts-noto-cjk' "$dashboard_fonts_step"
 
+canvas_evidence_step="$(workflow_step "$browser_sites_block" 'Upload Canvas browser evidence')"
+require 'Canvas browser evidence' "if: always() && matrix.name == 'canvas'" "$canvas_evidence_step"
+require 'Canvas browser evidence' 'uses: actions/upload-artifact@v7' "$canvas_evidence_step"
+require 'Canvas browser evidence' 'name: canvas-browser-attempt-${{ github.run_attempt }}' "$canvas_evidence_step"
+require 'Canvas browser evidence' 'path: web/test-results' "$canvas_evidence_step"
+require 'Canvas browser evidence' 'retention-days: 7' "$canvas_evidence_step"
+require 'Canvas CJK fonts' "matrix.name == 'canvas'" "$dashboard_fonts_step"
+
 # The private checkout adapter may differ from the source workflow, but its
 # mock-site ownership map must remain an exact copy. Exact comparison catches
 # both missing coverage and accidental duplicate/aggregate execution.
@@ -379,6 +387,7 @@ creative|tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts t
 reader-selection|tests/reader-selection-visual-explanation.e2e.spec.ts
 memory|tests/memory-workspace.e2e.spec.ts
 momentum|tests/momentum-page.e2e.spec.ts tests/momentum-voice-page.e2e.spec.ts
+canvas|tests/canvas-page.e2e.spec.ts tests/canvas-voice-page.e2e.spec.ts
 memos|tests/memos-page.e2e.spec.ts
 exchange|tests/exchange-page.e2e.spec.ts tests/exchange-reminders.e2e.spec.ts
 exchange-room|tests/exchange-room.e2e.spec.ts

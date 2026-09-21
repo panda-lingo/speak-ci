@@ -312,6 +312,8 @@ require 'Momentum browser evidence' 'name: momentum-browser-attempt-${{ github.r
 require 'Momentum CJK fonts' 'sudo apt-get install -y --no-install-recommends fonts-noto-cjk' "$(cat "$browser_workflow")"
 
 browser_sites_block="$(workflow_job "$browser_workflow" test-web-sites)"
+pwa_fonts_step="$(workflow_step "$(workflow_job "$browser_workflow" test-web-base-path)" 'Install PWA CJK fonts')"
+require 'PWA CJK fonts' 'sudo apt-get install -y --no-install-recommends fonts-noto-cjk' "$pwa_fonts_step"
 dashboard_evidence_step="$(workflow_step "$browser_sites_block" 'Upload dashboard browser evidence')"
 require 'Dashboard browser evidence' "if: always() && matrix.name == 'dashboard'" "$dashboard_evidence_step"
 require 'Dashboard browser evidence' 'uses: actions/upload-artifact@v7' "$dashboard_evidence_step"

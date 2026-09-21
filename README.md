@@ -1,5 +1,11 @@
 # speak-ci
 
+PWA installation and offline recovery are verified by the production runtime-prefix
+job against one image at `/` and `/academy`. The job installs Noto CJK fonts for
+English/Chinese/Japanese layouts at 375/768/1024/1440px. The source runner retains
+successful PWA screenshots per prefix in the existing runtime-prefix postflight
+artifact, and the exact dispatched source SHA supplies all tests and app code.
+
 Dashboard verification reads recorded metrics for all ten learning products,
 recent activity, vocabulary reviews, and saved Momentum plans. Its dedicated
 browser shard covers partial failures, retry, guest/account boundaries, and

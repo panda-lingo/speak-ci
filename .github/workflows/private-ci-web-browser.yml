@@ -289,6 +289,11 @@ jobs:
       - name: Verify Chrome browser
         run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
 
+      - name: Install PWA CJK fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+
       - name: Run production subpath image e2e
         env:
           PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}

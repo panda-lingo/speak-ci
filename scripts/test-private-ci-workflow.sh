@@ -332,6 +332,13 @@ require 'Canvas browser evidence' 'path: web/test-results' "$canvas_evidence_ste
 require 'Canvas browser evidence' 'retention-days: 7' "$canvas_evidence_step"
 require 'Canvas CJK fonts' "matrix.name == 'canvas'" "$dashboard_fonts_step"
 
+theme_evidence_step="$(workflow_step "$browser_sites_block" 'Upload product theme browser evidence')"
+require 'Product theme browser evidence' "if: always() && matrix.name == 'suite-theme'" "$theme_evidence_step"
+require 'Product theme browser evidence' 'uses: actions/upload-artifact@v7' "$theme_evidence_step"
+require 'Product theme browser evidence' 'name: product-theme-browser-attempt-${{ github.run_attempt }}' "$theme_evidence_step"
+require 'Product theme browser evidence' 'path: web/test-results' "$theme_evidence_step"
+require 'Product theme browser evidence' 'retention-days: 7' "$theme_evidence_step"
+
 panda_evidence_step="$(workflow_step "$browser_sites_block" 'Upload Panda onboarding browser evidence')"
 require 'Panda onboarding browser evidence' "if: always() && matrix.name == 'suite-pet-discovery'" "$panda_evidence_step"
 require 'Panda onboarding browser evidence' 'uses: actions/upload-artifact@v7' "$panda_evidence_step"
@@ -376,6 +383,7 @@ suite-quota|tests/standalone-sites-quota.e2e.spec.ts
 suite-pet|tests/standalone-sites-pet.e2e.spec.ts
 suite-pet-discovery|tests/pet-onboarding-discovery.e2e.spec.ts
 suite-availability|tests/standalone-sites-availability.e2e.spec.ts
+suite-theme|tests/product-site-theme.e2e.spec.ts
 language|tests/dictionary-page.e2e.spec.ts tests/speech-grammar-results.e2e.spec.ts
 language-switching|tests/learning-language.e2e.spec.ts
 language-curriculum|tests/learner-language.e2e.spec.ts

@@ -102,6 +102,7 @@ lifecycles:
 | `suite-pet` | `standalone-sites-pet.e2e.spec.ts` |
 | `suite-pet-discovery` | `pet-onboarding-discovery.e2e.spec.ts` (guide navigation, localized responsive lessons, replay, and media interruption) |
 | `suite-availability` | `standalone-sites-availability.e2e.spec.ts` |
+| `suite-theme` | `product-site-theme.e2e.spec.ts` (product shell light/dark theme inheritance and Reader gutters) |
 | `language` | `dictionary-page.e2e.spec.ts`, `speech-grammar-results.e2e.spec.ts` |
 | `language-switching` | `learning-language.e2e.spec.ts` (Chinese/Japanese selection, enrollment, persistence, guest isolation, responsive UI) |
 | `language-curriculum` | `learner-language.e2e.spec.ts` (native vocabulary, grammar, dictionary, and practice) |

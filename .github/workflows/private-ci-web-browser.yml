@@ -72,6 +72,8 @@ jobs:
             specs: tests/pet-onboarding-discovery.e2e.spec.ts
           - name: suite-availability
             specs: tests/standalone-sites-availability.e2e.spec.ts
+          - name: suite-theme
+            specs: tests/product-site-theme.e2e.spec.ts
           - name: language
             specs: tests/dictionary-page.e2e.spec.ts tests/speech-grammar-results.e2e.spec.ts
           - name: language-switching
@@ -199,6 +201,15 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: pet-onboarding-browser-attempt-${{ github.run_attempt }}
+          path: web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload product theme browser evidence
+        if: always() && matrix.name == 'suite-theme'
+        uses: actions/upload-artifact@v7
+        with:
+          name: product-theme-browser-attempt-${{ github.run_attempt }}
           path: web/test-results
           if-no-files-found: ignore
           retention-days: 7

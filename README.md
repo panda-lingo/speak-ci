@@ -1,5 +1,13 @@
 # speak-ci
 
+Managed AI prompts add two browser shards mirrored from the exact Speak source
+commit: `language-admin-prompts` verifies prompt/example editing and isolated
+save/reset across four interface languages and phone/desktop layouts;
+`language-live-controls` verifies native opening, silence and media instructions
+for four learning languages. Their individual jobs retain the existing timeout
+and artifact policy. Source and adapter ownership checks require both specs
+exactly once.
+
 PWA installation and offline recovery are verified by the production runtime-prefix
 job against one image at `/` and `/academy`. The job installs Noto CJK fonts for
 English/Chinese/Japanese layouts at 375/768/1024/1440px. The source runner retains
@@ -83,7 +91,7 @@ exceptions, and artifact contracts otherwise remain synchronized with
 
 The dispatcher sparsely checks out the source browser workflow at the exact
 requested Speak ref. `scripts/test-private-ci-workflow.sh` compares that live
-source matrix with the private adapter and also enforces the current thirty-one-row
+source matrix with the private adapter and also enforces the current browser
 ownership map, making source-only additions a failing parity check.
 
 An adapter push-triggered run follows the matching branch name in Speak (for
@@ -119,6 +127,8 @@ lifecycles:
 | `language-setup` | `setup-language.e2e.spec.ts` (native initial administrator and TOTP recovery) |
 | `language-admin-overview` | `admin-overview-language.e2e.spec.ts` (native system health, audit and user management) |
 | `language-admin-settings` | `admin-settings-language.e2e.spec.ts` (native config, plan fields, billing and promo recovery) |
+| `language-admin-prompts` | `admin-prompt-language.e2e.spec.ts` (language-specific prompt/example editing and isolated save/reset) |
+| `language-live-controls` | `live-control-prompts.e2e.spec.ts` (native SDK opening, silence, image and video instructions) |
 | `language-graphics` | `graphic-books-language.e2e.spec.ts` (native illustrated-book creation and narration lifecycle) |
 | `voice-agent` | `voice-agent-page.e2e.spec.ts` |
 | `creative` | `music-page.e2e.spec.ts`, `graphic-book-workspace.e2e.spec.ts`, `admin-plan-mm-gateway.e2e.spec.ts`, `admin-live-provider.e2e.spec.ts` (provider defaults and persistence at 375, 768, and 1440 pixels) |

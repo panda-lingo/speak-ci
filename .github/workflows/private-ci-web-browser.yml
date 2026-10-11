@@ -106,6 +106,10 @@ jobs:
             specs: tests/admin-overview-language.e2e.spec.ts
           - name: language-admin-settings
             specs: tests/admin-settings-language.e2e.spec.ts
+          - name: language-admin-prompts
+            specs: tests/admin-prompt-language.e2e.spec.ts
+          - name: language-live-controls
+            specs: tests/live-control-prompts.e2e.spec.ts
           - name: language-graphics
             specs: tests/graphic-books-language.e2e.spec.ts
           - name: voice-agent

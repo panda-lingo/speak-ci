@@ -191,6 +191,7 @@ jobs:
       - name: Run mock-site browser shard
         env:
           NEXT_PUBLIC_MOCK_API: "true"
+          PLAYWRIGHT_MOCK_TURBOPACK: "1"
           PLAYWRIGHT_BROWSER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: npx playwright test ${{ matrix.specs }} --workers=1 --reporter=line
 

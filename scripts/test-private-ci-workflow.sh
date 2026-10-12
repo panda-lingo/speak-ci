@@ -312,6 +312,7 @@ require 'Momentum browser evidence' 'name: momentum-browser-attempt-${{ github.r
 require 'Momentum CJK fonts' 'sudo apt-get install -y --no-install-recommends fonts-noto-cjk' "$(cat "$browser_workflow")"
 
 browser_sites_block="$(workflow_job "$browser_workflow" test-web-sites)"
+require 'Mock-site compiler selection' 'PLAYWRIGHT_MOCK_TURBOPACK: "1"' "$(workflow_step "$browser_sites_block" 'Run mock-site browser shard')"
 pwa_fonts_step="$(workflow_step "$(workflow_job "$browser_workflow" test-web-base-path)" 'Install PWA CJK fonts')"
 require 'PWA CJK fonts' 'sudo apt-get install -y --no-install-recommends fonts-noto-cjk' "$pwa_fonts_step"
 base_path_build_step="$(workflow_step "$(workflow_job "$browser_workflow" test-web-base-path)" 'Build production subpath image')"

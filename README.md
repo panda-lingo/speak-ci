@@ -14,6 +14,9 @@ the concurrent Reader warmup, desktop compiler, practice/PDF readiness, and
 production build-worker policies; source matrix parity remains required.
 Base-path verification consumes the shared web image cache without exporting
 it again; the gated production image build remains the cache writer.
+All 44 mock-site CI owners select `PLAYWRIGHT_MOCK_TURBOPACK=1`.
+The source supplies their owned Turbopack server, browser-only builtin
+fallbacks, and finite-worker continuity inside the existing test/job limits.
 
 Managed AI prompts add two browser shards mirrored from the exact Speak source
 commit: `language-admin-prompts` verifies prompt/example editing and isolated

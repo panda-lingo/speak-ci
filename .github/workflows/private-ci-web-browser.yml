@@ -82,8 +82,10 @@ jobs:
             specs: tests/learning-language.e2e.spec.ts
           - name: language-talk-review
             specs: tests/talk-review-language.e2e.spec.ts
-          - name: language-curriculum
-            specs: tests/learner-language.e2e.spec.ts
+          - name: language-curriculum-zh
+            specs: tests/learner-zh-language.e2e.spec.ts
+          - name: language-curriculum-ja
+            specs: tests/learner-ja-language.e2e.spec.ts
           - name: language-study
             specs: tests/study-language.e2e.spec.ts
           - name: language-games
@@ -131,7 +133,9 @@ jobs:
           - name: momentum
             specs: tests/momentum-page.e2e.spec.ts tests/momentum-voice-page.e2e.spec.ts
           - name: canvas
-            specs: tests/canvas-page.e2e.spec.ts tests/canvas-voice-page.e2e.spec.ts
+            specs: tests/canvas-page.e2e.spec.ts
+          - name: canvas-voice
+            specs: tests/canvas-voice-page.e2e.spec.ts
           - name: memos
             specs: tests/memos-page.e2e.spec.ts
           - name: exchange
@@ -179,7 +183,7 @@ jobs:
         run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'
 
       - name: Install dashboard and Momentum CJK fonts
-        if: matrix.name == 'momentum' || matrix.name == 'dashboard' || matrix.name == 'canvas' || matrix.name == 'suite-pet-discovery' || startsWith(matrix.name, 'exchange')
+        if: matrix.name == 'momentum' || matrix.name == 'dashboard' || startsWith(matrix.name, 'canvas') || matrix.name == 'suite-pet-discovery' || startsWith(matrix.name, 'exchange')
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends fonts-noto-cjk
@@ -227,10 +231,10 @@ jobs:
           retention-days: 7
 
       - name: Upload Canvas browser evidence
-        if: always() && matrix.name == 'canvas'
+        if: always() && startsWith(matrix.name, 'canvas')
         uses: actions/upload-artifact@v7
         with:
-          name: canvas-browser-attempt-${{ github.run_attempt }}
+          name: canvas-browser-${{ matrix.name }}-attempt-${{ github.run_attempt }}
           path: web/test-results
           if-no-files-found: ignore
           retention-days: 7
@@ -307,7 +311,6 @@ jobs:
           load: true
           tags: speak-web-subpath-e2e:local
           cache-from: type=gha,scope=web
-          cache-to: type=gha,mode=max,scope=web
 
       - name: Verify Chrome browser
         run: '"${{ steps.setup-chrome.outputs.chrome-path }}" --version'

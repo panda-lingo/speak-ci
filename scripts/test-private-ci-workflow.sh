@@ -379,6 +379,7 @@ if ! grep -Fq "if: always() && (startsWith(matrix.name, 'tutoring') || matrix.na
 fi
 expected_web_site_matrix="$(cat <<'EOF'
 dashboard|tests/dashboard-overview.e2e.spec.ts
+suite-shells|tests/standalone-sites-shells.e2e.spec.ts
 suite-quota|tests/standalone-sites-quota.e2e.spec.ts
 suite-pet|tests/standalone-sites-pet.e2e.spec.ts
 suite-pet-discovery|tests/pet-onboarding-discovery.e2e.spec.ts
@@ -386,6 +387,7 @@ suite-availability|tests/standalone-sites-availability.e2e.spec.ts
 suite-theme|tests/product-site-theme.e2e.spec.ts
 language|tests/dictionary-page.e2e.spec.ts tests/speech-grammar-results.e2e.spec.ts
 language-switching|tests/learning-language.e2e.spec.ts
+language-talk-review|tests/talk-review-language.e2e.spec.ts
 language-curriculum|tests/learner-language.e2e.spec.ts
 language-study|tests/study-language.e2e.spec.ts
 language-games|tests/games-language.e2e.spec.ts
@@ -404,7 +406,9 @@ language-admin-prompts|tests/admin-prompt-language.e2e.spec.ts
 language-live-controls|tests/live-control-prompts.e2e.spec.ts
 language-graphics|tests/graphic-books-language.e2e.spec.ts
 voice-agent|tests/voice-agent-page.e2e.spec.ts
-creative|tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts tests/admin-live-provider.e2e.spec.ts
+creative-music|tests/music-page.e2e.spec.ts
+creative-graphics|tests/graphic-book-workspace.e2e.spec.ts
+creative-admin|tests/admin-plan-mm-gateway.e2e.spec.ts tests/admin-live-provider.e2e.spec.ts
 reader-selection|tests/reader-selection-visual-explanation.e2e.spec.ts
 memory|tests/memory-workspace.e2e.spec.ts
 momentum|tests/momentum-page.e2e.spec.ts tests/momentum-voice-page.e2e.spec.ts

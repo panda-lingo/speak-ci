@@ -1,5 +1,23 @@
 # speak-ci
 
+The merged-run fixes keep source and fallback ownership synchronized while
+shortening independent browser jobs. `suite-shells` owns the original eight
+product/common shell cases and `suite-quota` owns the remaining 23 guest and
+recovery cases. `language-talk-review` owns the original twelve persisted
+review cases; `language-curriculum-zh` and `language-curriculum-ja` each own
+the four native-control cases for one locale. `canvas` and `canvas-voice`
+divide the original 37 page and six voice cases.
+`creative-music`, `creative-graphics`, and `creative-admin` divide the existing
+67 creative cases by spec family. Every assertion, locale, viewport, and
+nine-minute job cap is retained. The exact dispatched source commit supplies
+the concurrent Reader warmup, desktop compiler, practice/PDF readiness, and
+production build-worker policies; source matrix parity remains required.
+Base-path verification consumes the shared web image cache without exporting
+it again; the gated production image build remains the cache writer.
+All 44 mock-site CI owners select `PLAYWRIGHT_MOCK_TURBOPACK=1`.
+The source supplies their owned Turbopack server, browser-only builtin
+fallbacks, and finite-worker continuity inside the existing test/job limits.
+
 Managed AI prompts add two browser shards mirrored from the exact Speak source
 commit: `language-admin-prompts` verifies prompt/example editing and isolated
 save/reset across four interface languages and phone/desktop layouts;
@@ -45,7 +63,7 @@ conversion verification. The adapter's ownership map mirrors these source
 workflow additions and verifies the exact dispatched source SHA.
 
 Desktop browser verification retains the source nine-minute job cap. Its
-five-minute Playwright journey deadline and bounded authored-step progress
+345-second Playwright journey deadline and bounded authored-step progress
 reporter leave time for safe postflight evidence; desktop browser traces/results
 upload on failure or cancellation, with existing unique names and seven-day
 retention. No credentials, API bodies, or raw errors enter the progress records.
@@ -106,6 +124,7 @@ lifecycles:
 | Matrix row | Source specs |
 | --- | --- |
 | `dashboard` | `dashboard-overview.e2e.spec.ts` (recorded metrics, suggestions, plans, account isolation, localized responsive layouts) |
+| `suite-shells` | `standalone-sites-shells.e2e.spec.ts` |
 | `suite-quota` | `standalone-sites-quota.e2e.spec.ts` |
 | `suite-pet` | `standalone-sites-pet.e2e.spec.ts` |
 | `suite-pet-discovery` | `pet-onboarding-discovery.e2e.spec.ts` (guide navigation, localized responsive lessons, replay, and media interruption) |
@@ -113,7 +132,9 @@ lifecycles:
 | `suite-theme` | `product-site-theme.e2e.spec.ts` (product shell light/dark theme inheritance and Reader gutters) |
 | `language` | `dictionary-page.e2e.spec.ts`, `speech-grammar-results.e2e.spec.ts` |
 | `language-switching` | `learning-language.e2e.spec.ts` (Chinese/Japanese selection, enrollment, persistence, guest isolation, responsive UI) |
-| `language-curriculum` | `learner-language.e2e.spec.ts` (native vocabulary, grammar, dictionary, and practice) |
+| `language-talk-review` | `talk-review-language.e2e.spec.ts` (persisted review metrics and owned audio at four widths) |
+| `language-curriculum-zh` | `learner-zh-language.e2e.spec.ts` (Chinese native vocabulary, grammar, dictionary, and practice) |
+| `language-curriculum-ja` | `learner-ja-language.e2e.spec.ts` (Japanese native vocabulary, grammar, dictionary, and practice) |
 | `language-study` | `study-language.e2e.spec.ts` (native SRS review and adaptive learning controls) |
 | `language-games` | `games-language.e2e.spec.ts` (six native games, real lifecycle protocol, language rankings, responsive speech controls) |
 | `language-practice` | `practice-language.e2e.spec.ts` (82 native topics, adaptive practice text, date/phrase handling, responsive controls) |
@@ -131,11 +152,14 @@ lifecycles:
 | `language-live-controls` | `live-control-prompts.e2e.spec.ts` (native SDK opening, silence, image and video instructions) |
 | `language-graphics` | `graphic-books-language.e2e.spec.ts` (native illustrated-book creation and narration lifecycle) |
 | `voice-agent` | `voice-agent-page.e2e.spec.ts` |
-| `creative` | `music-page.e2e.spec.ts`, `graphic-book-workspace.e2e.spec.ts`, `admin-plan-mm-gateway.e2e.spec.ts`, `admin-live-provider.e2e.spec.ts` (provider defaults and persistence at 375, 768, and 1440 pixels) |
+| `creative-music` | `music-page.e2e.spec.ts` |
+| `creative-graphics` | `graphic-book-workspace.e2e.spec.ts` |
+| `creative-admin` | `admin-plan-mm-gateway.e2e.spec.ts`, `admin-live-provider.e2e.spec.ts` (provider defaults and persistence at 375, 768, and 1440 pixels) |
 | `reader-selection` | `reader-selection-visual-explanation.e2e.spec.ts` |
 | `memory` | `memory-workspace.e2e.spec.ts` |
 | `momentum` | `momentum-page.e2e.spec.ts`, `momentum-voice-page.e2e.spec.ts` |
-| `canvas` | `canvas-page.e2e.spec.ts`, `canvas-voice-page.e2e.spec.ts` (notebooks, multimedia, voice, and responsive evidence) |
+| `canvas` | `canvas-page.e2e.spec.ts` (notebooks, multimedia, and responsive evidence) |
+| `canvas-voice` | `canvas-voice-page.e2e.spec.ts` (voice controls and responsive evidence) |
 | `memos` | `memos-page.e2e.spec.ts` |
 | `tutoring` | `tutoring-page.e2e.spec.ts` |
 | `tutoring-classroom` | `tutoring-classroom.e2e.spec.ts`, `tutoring-classroom-upload.e2e.spec.ts` (shared lessons and compressed upload UI at four widths) |
@@ -314,8 +338,9 @@ and traces, and install CJK fonts for Chinese and Japanese evidence. Source
 Go integration tests and web unit tests continue to run for the exact requested
 `source_ref`; image publication remains gated by all required jobs.
 
-Canvas browser coverage mirrors the selected Speak source commit: the `canvas`
-shard owns `canvas-page.e2e.spec.ts` and `canvas-voice-page.e2e.spec.ts`, installs
-Noto CJK fonts, and always retains `canvas-browser-attempt-*` screenshots and
-traces. The private workflow contract checks both the exact source matrix and
+Canvas browser coverage mirrors the selected Speak source commit: `canvas`
+owns `canvas-page.e2e.spec.ts` and `canvas-voice` owns
+`canvas-voice-page.e2e.spec.ts`. Both install Noto CJK fonts and always retain
+`canvas-browser-${matrix.name}-attempt-*` screenshots and traces.
+The private workflow contract checks both the exact source matrix and
 the Canvas evidence policy before image publication.

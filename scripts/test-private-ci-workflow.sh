@@ -312,8 +312,16 @@ require 'Momentum browser evidence' 'name: momentum-browser-attempt-${{ github.r
 require 'Momentum CJK fonts' 'sudo apt-get install -y --no-install-recommends fonts-noto-cjk' "$(cat "$browser_workflow")"
 
 browser_sites_block="$(workflow_job "$browser_workflow" test-web-sites)"
+require 'Mock-site compiler selection' 'PLAYWRIGHT_MOCK_TURBOPACK: "1"' "$(workflow_step "$browser_sites_block" 'Run mock-site browser shard')"
 pwa_fonts_step="$(workflow_step "$(workflow_job "$browser_workflow" test-web-base-path)" 'Install PWA CJK fonts')"
 require 'PWA CJK fonts' 'sudo apt-get install -y --no-install-recommends fonts-noto-cjk' "$pwa_fonts_step"
+base_path_build_step="$(workflow_step "$(workflow_job "$browser_workflow" test-web-base-path)" 'Build production subpath image')"
+require 'Base-path cache consumer' 'cache-from: type=gha,scope=web' "$base_path_build_step"
+if grep -Fq 'cache-to:' <<< "$base_path_build_step"; then
+  echo 'Base-path verification must not export the production build cache' >&2
+  exit 1
+fi
+require 'Production web cache writer' 'cache-to: type=gha,mode=max,scope=web' "$(workflow_job "$workflow_dir/private-ci-build.yml" build-web)"
 dashboard_evidence_step="$(workflow_step "$browser_sites_block" 'Upload dashboard browser evidence')"
 require 'Dashboard browser evidence' "if: always() && matrix.name == 'dashboard'" "$dashboard_evidence_step"
 require 'Dashboard browser evidence' 'uses: actions/upload-artifact@v7' "$dashboard_evidence_step"
@@ -325,12 +333,12 @@ require 'Dashboard CJK fonts' "if: matrix.name == 'momentum' || matrix.name == '
 require 'Dashboard CJK fonts' 'sudo apt-get install -y --no-install-recommends fonts-noto-cjk' "$dashboard_fonts_step"
 
 canvas_evidence_step="$(workflow_step "$browser_sites_block" 'Upload Canvas browser evidence')"
-require 'Canvas browser evidence' "if: always() && matrix.name == 'canvas'" "$canvas_evidence_step"
+require 'Canvas browser evidence' "if: always() && startsWith(matrix.name, 'canvas')" "$canvas_evidence_step"
 require 'Canvas browser evidence' 'uses: actions/upload-artifact@v7' "$canvas_evidence_step"
-require 'Canvas browser evidence' 'name: canvas-browser-attempt-${{ github.run_attempt }}' "$canvas_evidence_step"
+require 'Canvas browser evidence' 'name: canvas-browser-${{ matrix.name }}-attempt-${{ github.run_attempt }}' "$canvas_evidence_step"
 require 'Canvas browser evidence' 'path: web/test-results' "$canvas_evidence_step"
 require 'Canvas browser evidence' 'retention-days: 7' "$canvas_evidence_step"
-require 'Canvas CJK fonts' "matrix.name == 'canvas'" "$dashboard_fonts_step"
+require 'Canvas CJK fonts' "startsWith(matrix.name, 'canvas')" "$dashboard_fonts_step"
 
 theme_evidence_step="$(workflow_step "$browser_sites_block" 'Upload product theme browser evidence')"
 require 'Product theme browser evidence' "if: always() && matrix.name == 'suite-theme'" "$theme_evidence_step"
@@ -379,6 +387,7 @@ if ! grep -Fq "if: always() && (startsWith(matrix.name, 'tutoring') || matrix.na
 fi
 expected_web_site_matrix="$(cat <<'EOF'
 dashboard|tests/dashboard-overview.e2e.spec.ts
+suite-shells|tests/standalone-sites-shells.e2e.spec.ts
 suite-quota|tests/standalone-sites-quota.e2e.spec.ts
 suite-pet|tests/standalone-sites-pet.e2e.spec.ts
 suite-pet-discovery|tests/pet-onboarding-discovery.e2e.spec.ts
@@ -386,7 +395,9 @@ suite-availability|tests/standalone-sites-availability.e2e.spec.ts
 suite-theme|tests/product-site-theme.e2e.spec.ts
 language|tests/dictionary-page.e2e.spec.ts tests/speech-grammar-results.e2e.spec.ts
 language-switching|tests/learning-language.e2e.spec.ts
-language-curriculum|tests/learner-language.e2e.spec.ts
+language-talk-review|tests/talk-review-language.e2e.spec.ts
+language-curriculum-zh|tests/learner-zh-language.e2e.spec.ts
+language-curriculum-ja|tests/learner-ja-language.e2e.spec.ts
 language-study|tests/study-language.e2e.spec.ts
 language-games|tests/games-language.e2e.spec.ts
 language-practice|tests/practice-language.e2e.spec.ts
@@ -404,11 +415,14 @@ language-admin-prompts|tests/admin-prompt-language.e2e.spec.ts
 language-live-controls|tests/live-control-prompts.e2e.spec.ts
 language-graphics|tests/graphic-books-language.e2e.spec.ts
 voice-agent|tests/voice-agent-page.e2e.spec.ts
-creative|tests/music-page.e2e.spec.ts tests/graphic-book-workspace.e2e.spec.ts tests/admin-plan-mm-gateway.e2e.spec.ts tests/admin-live-provider.e2e.spec.ts
+creative-music|tests/music-page.e2e.spec.ts
+creative-graphics|tests/graphic-book-workspace.e2e.spec.ts
+creative-admin|tests/admin-plan-mm-gateway.e2e.spec.ts tests/admin-live-provider.e2e.spec.ts
 reader-selection|tests/reader-selection-visual-explanation.e2e.spec.ts
 memory|tests/memory-workspace.e2e.spec.ts
 momentum|tests/momentum-page.e2e.spec.ts tests/momentum-voice-page.e2e.spec.ts
-canvas|tests/canvas-page.e2e.spec.ts tests/canvas-voice-page.e2e.spec.ts
+canvas|tests/canvas-page.e2e.spec.ts
+canvas-voice|tests/canvas-voice-page.e2e.spec.ts
 memos|tests/memos-page.e2e.spec.ts
 exchange|tests/exchange-page.e2e.spec.ts tests/exchange-reminders.e2e.spec.ts
 exchange-room|tests/exchange-room.e2e.spec.ts
